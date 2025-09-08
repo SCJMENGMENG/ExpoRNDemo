@@ -35,7 +35,6 @@ export default function HomeScreen() {
   const [isConnected, setIsConnected] = useState(false); // 跟踪蓝牙连接状态
   const [connectedPeripheral, setConnectedPeripheral] = useState<string | null>(null); // 当前连接的设备
   const heartbeatId = useRef<number | null>(null); // 心跳定时器引用
-  const heartbeatTimer = useRef<number | null>(null);
   const router = useRouter();
 
   // MARK:蓝牙写入数据函数
