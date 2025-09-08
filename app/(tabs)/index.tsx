@@ -19,6 +19,10 @@ import DeviceInfo from 'react-native-device-info';
 const SECONDS_TO_SCAN_FOR = 10;
 const SERVICE_UUIDS: string[] = ["280f"];
 
+const encoder = new TextEncoder();  
+const SERVICE_UUID = `12345678-1234-5678-1234-56789abcdef0`;
+const CHAR_OUTBOX = `12345678-1234-5678-1234-56789abcdef1`;
+
 export default function HomeScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
@@ -31,23 +35,20 @@ export default function HomeScreen() {
   const [isConnected, setIsConnected] = useState(false); // 跟踪蓝牙连接状态
   const [connectedPeripheral, setConnectedPeripheral] = useState<string | null>(null); // 当前连接的设备
   const heartbeatId = useRef<number | null>(null); // 心跳定时器引用
+  const heartbeatTimer = useRef<number | null>(null);
   const router = useRouter();
 
   // MARK:蓝牙写入数据函数
-  const writeWithoutResponse = async (peripheralId: string, data: string) => {
+  const writeWithoutResponse = async (peripheralId: string, base64str: string) => {
     try {
-      // 这里需要根据你的具体蓝牙设备设置正确的服务UUID和特征UUID
-      const serviceUUID = '280f'; // 你的服务UUID
-      const characteristicUUID = '2810'; // 你的特征UUID，需要根据实际设备修改
-      
-      // 将字符串转换为字节数组
-      const  dataBytes = data.split('').map(char => char.charCodeAt(0));
+      const data = Array.from(encoder.encode(base64str));
       
       await BleManager.writeWithoutResponse(
         peripheralId,
-        serviceUUID,
-        characteristicUUID,
-        dataBytes
+        SERVICE_UUID,
+        CHAR_OUTBOX,
+        data,
+        data.length
       );
       console.log('蓝牙数据发送成功:', data);
     } catch (error) {
@@ -55,6 +56,9 @@ export default function HomeScreen() {
     }
   };
 
+  // 477d 100306
+  // "9bca0a16-a329-7e3a-1515-baec23b67666",
+  // "EDE4AtoBNGlQaG9uZVhTTWF4X2lPU180QzM3M0FCRC1GOURDLTRBNDctQTZEQi01MzQ3NjZFRDc4Njk="
   // MARK:生成心跳命令
   const generateHeartbeatCommand = async () => {
     try {
@@ -67,10 +71,10 @@ export default function HomeScreen() {
       
       // 生成心跳命令，你可以根据具体协议修改这个格式
       const heartbeatCommand = `HEARTBEAT:${deviceIdentifier}:${timestamp}`;
-      return heartbeatCommand;
+      return "EDE4AtoBNGlQaG9uZVhTTWF4X2lPU180QzM3M0FCRC1GOURDLTRBNDctQTZEQi01MzQ3NjZFRDc4Njk=";// heartbeatCommand;
     } catch (error) {
       console.log('生成心跳命令失败:', error);
-      return `HEARTBEAT:Unknown_Device:${Date.now()}`;
+      return "EDE4AtoBNGlQaG9uZVhTTWF4X2lPU180QzM3M0FCRC1GOURDLTRBNDctQTZEQi01MzQ3NjZFRDc4Njk=";// `HEARTBEAT:Unknown_Device:${Date.now()}`;
     }
   };
 
@@ -471,11 +475,6 @@ export default function HomeScreen() {
         {deviceId && (
           <Text style={styles.statusText}>
             设备ID: {deviceId}
-          </Text>
-        )}
-        {connectedPeripheral && (
-          <Text style={styles.statusText}>
-            心跳状态: {heartbeatId.current ? '运行中' : '已停止'}
           </Text>
         )}
         <Text style={styles.statusText}>
