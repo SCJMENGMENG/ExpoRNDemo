@@ -433,6 +433,12 @@ export default function HomeScreen() {
               <TouchableOpacity onPress={() => router.push('/child/target')} style={styles.button}>
                 <Text>跳转页面</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/child/threads')} style={styles.button}>
+                <Text>跳转threads</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/child/threadsComplete')} style={styles.button}>
+                <Text>跳转threadsComplete</Text>
+              </TouchableOpacity>
             </View>
           }
 
