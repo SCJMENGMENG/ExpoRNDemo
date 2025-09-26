@@ -34,17 +34,6 @@ const MainThreadBlockExample = () => {
   //   Alert.alert('计算完成', `结果: ${calcResult}`);
   // };
 
-  // 1. 定义耗时计算函数，并使用 'worklet' 指令标记
-  // const expensiveCalculation = useWorklet("default", (): number => {
-  //   "worklet"; 
-  //   let total = 0;
-  //   for (let i = 0; i < 1000000000; i++) {
-  //     total += i;
-  //   }
-  //   console.log('----scj----', total)//499999999067109000
-  //   return total;
-  // });
-
   // 1. 包装主线程回调
   const onDone = useRunOnJS((res: number) => {
     console.log('----scj222----')
