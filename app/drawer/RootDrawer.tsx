@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useRef } from 'react';
-import { Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import {
     runOnJS,
@@ -10,7 +10,8 @@ import {
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
-const EDGE_WIDTH = 10;
+const DRAWER_Right = width * 0.25;
+const EDGE_WIDTH = 15;
 
 type DrawerContextType = {
     openDrawer: () => void;
@@ -73,7 +74,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     // 遮罩层透明度，拖动时显示，未拖动时隐藏
     const maskOpacity = dragX.interpolate({
         inputRange: [0, 40, SCREEN_WIDTH - EDGE_WIDTH],
-        outputRange: [0, 0.3, 0.5],
+        outputRange: [0, 0.16, 0.3],
         extrapolate: 'clamp',
     });
     const panResponder = useRef(
@@ -121,24 +122,25 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                     ]}
                     {...panResponder.panHandlers}
                 >
-                    <Animated.Text style={{ color: '#fff', fontSize: fontSizeAnim, marginLeft: 8, marginTop: 8 }}>
+                    {/* <Animated.Text style={{ color: '#fff', fontSize: fontSizeAnim, marginLeft: 8, marginTop: 8 }}>
                         123
-                    </Animated.Text>
+                    </Animated.Text> */}
+                    {/* Drawer 层 */}
+                    <Animated.View style={[styles.drawer, drawerStyle]}>
+                        <View style={{ flex: 1, padding: 20 }}>
+                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 20 }}>菜单</Text>
+                            <Text style={styles.menuItem}>🏠 首页</Text>
+                            <Text style={styles.menuItem}>👤 个人中心</Text>
+                            <Text style={styles.menuItem}>⚙️ 设置</Text>
+                            <Text style={styles.menuItem}>🚪 退出登录</Text>
+                        </View>
+                    </Animated.View>
                 </Animated.View>
 
                 {/* 主内容 */}
                 {children}
 
                 {/* 遮罩层 */}
-                {/* <Animated.View
-                    style={[
-                        StyleSheet.absoluteFill,
-                        {
-                            backgroundColor: 'rgba(0,0,0,0.3)',
-                        },
-                        backdropStyle,
-                    ]}
-                /> */}
                 <Animated.View
                     pointerEvents="none"
                     style={{
@@ -152,17 +154,6 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                         zIndex: 9,
                     }}
                 />
-
-                {/* Drawer 层 */}
-                {/* <Animated.View style={[styles.drawer, drawerStyle]}>
-          <View style={{ flex: 1, padding: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 20 }}>菜单</Text>
-            <Text style={styles.menuItem}>🏠 首页</Text>
-            <Text style={styles.menuItem}>👤 个人中心</Text>
-            <Text style={styles.menuItem}>⚙️ 设置</Text>
-            <Text style={styles.menuItem}>🚪 退出登录</Text>
-          </View>
-        </Animated.View> */}
             </View>
         </DrawerContext.Provider>
     );
@@ -171,7 +162,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
 const styles = StyleSheet.create({
     drawer: {
         position: 'absolute',
-        left: 300,
+        right: DRAWER_Right,
         top: 0,
         bottom: 0,
         width: DRAWER_WIDTH,
