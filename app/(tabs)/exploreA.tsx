@@ -1,12 +1,21 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet, View } from 'react-native';
+import React from 'react';
+import { Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
+import SwiperFlatList from 'react-native-swiper-flatlist';
+
+const data = [
+  { key: '1', title: '卡片一', color: '#FFB6C1' },
+  { key: '2', title: '卡片二', color: '#87CEFA' },
+  { key: '3', title: '卡片三', color: '#90EE90' },
+  { key: '4', title: '卡片四', color: '#FFD700' },
+];
+
+const { width } = Dimensions.get('window');
 
 import { Collapsible } from '@/components/Collapsible';
 import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function TabTwoScreen() {
   return (
@@ -83,6 +92,18 @@ export default function TabTwoScreen() {
           ),
         })}
       </Collapsible>
+      <SwiperFlatList
+        data={data}
+        renderItem={({ item }) => (
+          <View style={[styles.card, { backgroundColor: item.color }]}> 
+            <Text style={styles.cardText}>{item.title}</Text>
+          </View>
+        )}
+        showPagination
+        paginationActiveColor="#007AFF"
+        paginationDefaultColor="#ccc"
+        paginationStyleItem={{ width: 8, height: 8 }}
+      />
     </View>
   );
 }
@@ -97,5 +118,30 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+  },
+
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  card: {
+    width: width * 0.8,
+    height: 220,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: width * 0.1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  cardText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
   },
 });
