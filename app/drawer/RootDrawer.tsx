@@ -37,7 +37,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
 
     const gesture = Gesture.Pan()
         .onUpdate((e) => {
-            const newX = translateX.value + e.changeX;
+            const newX = -DRAWER_WIDTH + e.translationX;
             translateX.value = Math.min(0, Math.max(-DRAWER_WIDTH, newX));
         })
         .onEnd(() => {

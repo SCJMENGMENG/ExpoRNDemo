@@ -7,7 +7,6 @@ import { Animated, Button, Dimensions, Image, PanResponder, Platform, StyleSheet
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
-import { useDrawer } from '../drawer/CustomDrawer';
 
 const EDGE_WIDTH = 60;
 
@@ -22,17 +21,7 @@ const { width } = Dimensions.get('window');
 
 
 export default function TabTwoScreen() {
-    const { openDrawer } = useDrawer();
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-
-    const gesture = Gesture.Pan()
-        .onStart(e => {
-            console.log('------scj----111', e.x)
-            if (e.x < EDGE_WIDTH) {
-                console.log('------scj----2222', e.x)
-                runOnJS(openDrawer)();
-            }
-        });
 
     const dragX = useRef(new Animated.Value(0)).current;
     const widthAnim = dragX.interpolate({
@@ -168,7 +157,9 @@ export default function TabTwoScreen() {
                 paginationDefaultColor="#ccc"
                 paginationStyleItem={{ width: 8, height: 8 }}
             />
-            <Button title="打开菜单" onPress={openDrawer} />
+            <Button title="打开菜单" onPress={() => {
+                // openDrawer()
+            }} />
         </View>
     );
 }
