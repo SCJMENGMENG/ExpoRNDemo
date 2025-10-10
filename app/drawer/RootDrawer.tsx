@@ -77,21 +77,34 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
         outputRange: [0, 0.16, 0.3],
         extrapolate: 'clamp',
     });
+    // 跟手拖动：记录初始dragX
+    const startDragXRef = useRef(0);
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: (evt, gestureState) => evt.nativeEvent.pageX < 40,
-            onPanResponderMove: Animated.event(
-                [null, { dx: dragX }],
-                { useNativeDriver: false }
-            ),
-            onPanResponderRelease: (evt, gestureState) => {
+            onStartShouldSetPanResponder: (evt, gestureState) => {
+                // 只在左侧40px或红色view区域响应
                 const dragValue = dragX.__getValue();
-                const velocity = gestureState.vx; // 水平方向速度
+                return evt.nativeEvent.pageX < 40 || dragValue > 0;
+            },
+            onPanResponderGrant: () => {
+                startDragXRef.current = dragX.__getValue();
+            },
+            onPanResponderMove: (evt, gestureState) => {
+                // 跟手拖动，允许来回拖动
+                let newDx = startDragXRef.current + gestureState.dx;
+                if (newDx < 0) newDx = 0;
+                if (newDx > SCREEN_WIDTH - EDGE_WIDTH) newDx = SCREEN_WIDTH - EDGE_WIDTH;
+                dragX.setValue(newDx);
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                let endValue = startDragXRef.current + gestureState.dx;
+                if (endValue < 0) endValue = 0;
+                if (endValue > SCREEN_WIDTH - EDGE_WIDTH) endValue = SCREEN_WIDTH - EDGE_WIDTH;
+                const velocity = gestureState.vx;
                 const threshold = SCREEN_WIDTH / 2;
-                const velocityThreshold = 1.2; // 你可以根据体验调整
-                // 判断展开/收起逻辑
+                const velocityThreshold = 1.2;
                 if (
-                    dragValue > threshold ||
+                    endValue > threshold ||
                     velocity > velocityThreshold
                 ) {
                     // 展开到全屏
@@ -99,10 +112,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                         toValue: SCREEN_WIDTH - EDGE_WIDTH,
                         useNativeDriver: false,
                     }).start();
-                } else if (
-                    dragValue < threshold ||
-                    velocity < -velocityThreshold
-                ) {
+                } else {
                     // 收起
                     Animated.spring(dragX, {
                         toValue: 0,
