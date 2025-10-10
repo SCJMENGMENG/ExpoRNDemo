@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import React from 'react';
-import { Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import SwiperFlatList from 'react-native-swiper-flatlist';
 
 const data = [
@@ -19,7 +19,7 @@ import { ThemedView } from '@/components/ThemedView';
 
 export default function TabTwoScreen() {
   return (
-    <View>
+    <ScrollView>
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Explore</ThemedText>
       </ThemedView>
@@ -104,7 +104,7 @@ export default function TabTwoScreen() {
         paginationDefaultColor="#ccc"
         paginationStyleItem={{ width: 8, height: 8 }}
       />
-    </View>
+    </ScrollView>
   );
 }
 
