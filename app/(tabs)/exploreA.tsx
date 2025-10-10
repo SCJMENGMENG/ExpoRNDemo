@@ -4,8 +4,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import React, { useRef } from 'react';
 import { Animated, Button, Dimensions, Image, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
-import { Gesture } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
 
 const EDGE_WIDTH = 60;
