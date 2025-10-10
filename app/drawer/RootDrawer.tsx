@@ -70,6 +70,12 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
         outputRange: [10, 60],
         extrapolate: 'clamp',
     });
+    // 遮罩层透明度，拖动时显示，未拖动时隐藏
+    const maskOpacity = dragX.interpolate({
+        inputRange: [0, 40, SCREEN_WIDTH - EDGE_WIDTH],
+        outputRange: [0, 0.3, 0.5],
+        extrapolate: 'clamp',
+    });
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: (evt, gestureState) => evt.nativeEvent.pageX < 40,
@@ -125,14 +131,27 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
 
                 {/* 遮罩层 */}
                 {/* <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: 'rgba(0,0,0,0.3)',
-            },
-            backdropStyle,
-          ]}
-        /> */}
+                    style={[
+                        StyleSheet.absoluteFill,
+                        {
+                            backgroundColor: 'rgba(0,0,0,0.3)',
+                        },
+                        backdropStyle,
+                    ]}
+                /> */}
+                <Animated.View
+                    pointerEvents="none"
+                    style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: SCREEN_WIDTH,
+                        height: SCREEN_HEIGHT,
+                        backgroundColor: 'rgba(0,0,0,1)',
+                        opacity: maskOpacity,
+                        zIndex: 9,
+                    }}
+                />
 
                 {/* Drawer 层 */}
                 {/* <Animated.View style={[styles.drawer, drawerStyle]}>
