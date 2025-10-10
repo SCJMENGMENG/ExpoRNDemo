@@ -5,6 +5,7 @@ import { ThemedView } from '@/components/ThemedView';
 import React, { useRef } from 'react';
 import { Animated, Button, Dimensions, Image, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
+import { useDrawer } from '../drawer/RootDrawer';
 
 const EDGE_WIDTH = 60;
 
@@ -20,6 +21,8 @@ const { width } = Dimensions.get('window');
 
 export default function TabTwoScreen() {
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+
+    const { openDrawer } = useDrawer();
 
     const dragX = useRef(new Animated.Value(0)).current;
     const widthAnim = dragX.interpolate({
@@ -156,7 +159,8 @@ export default function TabTwoScreen() {
                 paginationStyleItem={{ width: 8, height: 8 }}
             />
             <Button title="打开菜单" onPress={() => {
-                // openDrawer()
+                openDrawer()
+                console.log('openDrawer')
             }} />
         </View>
     );

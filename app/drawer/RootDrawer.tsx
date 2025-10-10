@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useRef } from 'react';
-import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Animated, Button, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 import {
     useAnimatedStyle,
-    useSharedValue,
-    withSpring
+    useSharedValue
 } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
@@ -16,22 +15,29 @@ type DrawerContextType = {
     closeDrawer: () => void;
 };
 
-const DrawerContext = createContext<DrawerContextType>({
-    openDrawer: () => { },
-    closeDrawer: () => { },
-});
+const DrawerContext = createContext<DrawerContextType | undefined>(undefined);
 
-export const useDrawer = () => useContext(DrawerContext);
+export const useDrawer = () => {
+    const ctx = useContext(DrawerContext);
+    if (!ctx) throw new Error('useDrawer must be used within a DrawerProvider');
+    return ctx;
+};
 
 export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     const translateX = useSharedValue(-DRAWER_WIDTH);
 
     const openDrawer = () => {
-        translateX.value = withSpring(0, { damping: 15 });
+        Animated.spring(dragX, {
+            toValue: SCREEN_WIDTH - EDGE_WIDTH,
+            useNativeDriver: false,
+        }).start();
     };
 
     const closeDrawer = () => {
-        translateX.value = withSpring(-DRAWER_WIDTH, { damping: 15 });
+        Animated.spring(dragX, {
+            toValue: 0,
+            useNativeDriver: false,
+        }).start();
     };
 
     const drawerStyle = useAnimatedStyle(() => ({
@@ -90,7 +96,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                 if (endValue < 0) endValue = 0;
                 if (endValue > SCREEN_WIDTH - EDGE_WIDTH) endValue = SCREEN_WIDTH - EDGE_WIDTH;
                 const velocity = gestureState.vx;
-                
+
                 // 如果完全展开且左滑速度足够大，直接收起
                 if (
                     startDragXRef.current >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
@@ -162,6 +168,10 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                             <Text style={styles.menuItem}>👤 个人中心</Text>
                             <Text style={styles.menuItem}>⚙️ 设置</Text>
                             <Text style={styles.menuItem}>🚪 退出登录</Text>
+                            <Button title="关闭菜单" onPress={() => {
+                                closeDrawer()
+                                console.log('closeDrawer')
+                            }} />
                         </View>
                     </Animated.View>
                 </Animated.View>
