@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useRef } from 'react';
 import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
-import { Gesture } from 'react-native-gesture-handler';
 import {
-    runOnJS,
     useAnimatedStyle,
     useSharedValue,
     withSpring
@@ -36,26 +34,8 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
         translateX.value = withSpring(-DRAWER_WIDTH, { damping: 15 });
     };
 
-    const gesture = Gesture.Pan()
-        .onUpdate((e) => {
-            const newX = -DRAWER_WIDTH + e.translationX;
-            translateX.value = Math.min(0, Math.max(-DRAWER_WIDTH, newX));
-        })
-        .onEnd(() => {
-            if (translateX.value > -DRAWER_WIDTH / 2) {
-                runOnJS(openDrawer)();
-            } else {
-                runOnJS(closeDrawer)();
-            }
-        });
-
     const drawerStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: translateX.value }],
-    }));
-
-    const backdropStyle = useAnimatedStyle(() => ({
-        opacity: 1 + translateX.value / DRAWER_WIDTH,
-        display: translateX.value === -DRAWER_WIDTH ? 'none' : 'flex',
     }));
 
     // 拖动红色view动画
@@ -151,7 +131,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                             position: 'absolute',
                             left: 0,
                             top: 0,
-                            backgroundColor: 'red',
+                            // backgroundColor: 'red',
                             justifyContent: 'flex-start',
                             alignItems: 'flex-start',
                             borderTopRightRadius: 16,
