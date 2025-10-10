@@ -84,11 +84,31 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                 [null, { dx: dragX }],
                 { useNativeDriver: false }
             ),
-            onPanResponderRelease: () => {
-                Animated.spring(dragX, {
-                    toValue: 0,
-                    useNativeDriver: false,
-                }).start();
+            onPanResponderRelease: (evt, gestureState) => {
+                const dragValue = dragX.__getValue();
+                const velocity = gestureState.vx; // 水平方向速度
+                const threshold = SCREEN_WIDTH / 2;
+                const velocityThreshold = 1.2; // 你可以根据体验调整
+                // 判断展开/收起逻辑
+                if (
+                    dragValue > threshold ||
+                    velocity > velocityThreshold
+                ) {
+                    // 展开到全屏
+                    Animated.spring(dragX, {
+                        toValue: SCREEN_WIDTH - EDGE_WIDTH,
+                        useNativeDriver: false,
+                    }).start();
+                } else if (
+                    dragValue < threshold ||
+                    velocity < -velocityThreshold
+                ) {
+                    // 收起
+                    Animated.spring(dragX, {
+                        toValue: 0,
+                        useNativeDriver: false,
+                    }).start();
+                }
             },
             onPanResponderTerminate: () => {
                 Animated.spring(dragX, {
