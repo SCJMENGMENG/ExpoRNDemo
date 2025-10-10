@@ -103,6 +103,18 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                 const velocity = gestureState.vx;
                 const threshold = SCREEN_WIDTH / 2;
                 const velocityThreshold = 1.2;
+                const leftVelocityThreshold = -1.2; // 左滑速度阈值
+                // 如果完全展开且左滑速度足够大，直接收起
+                if (
+                    startDragXRef.current >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
+                    velocity < leftVelocityThreshold
+                ) {
+                    Animated.spring(dragX, {
+                        toValue: 0,
+                        useNativeDriver: false,
+                    }).start();
+                    return;
+                }
                 if (
                     endValue > threshold ||
                     velocity > velocityThreshold
