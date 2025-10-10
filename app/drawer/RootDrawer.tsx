@@ -47,7 +47,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     const RIGHT_VELOCITY_THRESHOLD = 1.2; // 右滑展开
 
     // 距离阈值常量
-    const DRAWER_DISTANCE_THRESHOLD = SCREEN_WIDTH / 4; // 展开/收起距离
+    const DRAWER_DISTANCE_THRESHOLD = SCREEN_WIDTH / 2; // 展开/收起距离
 
     const widthAnim = dragX.interpolate({
         inputRange: [0, SCREEN_WIDTH - EDGE_WIDTH],
@@ -85,6 +85,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                 dragX.setValue(newDx);
             },
             onPanResponderRelease: (evt, gestureState) => {
+                console.log('滑动速度 vx:', gestureState.vx);
                 let endValue = startDragXRef.current + gestureState.dx;
                 if (endValue < 0) endValue = 0;
                 if (endValue > SCREEN_WIDTH - EDGE_WIDTH) endValue = SCREEN_WIDTH - EDGE_WIDTH;
