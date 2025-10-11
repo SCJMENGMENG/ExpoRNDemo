@@ -2,14 +2,19 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useRunOnJS, useWorklet } from "react-native-worklets-core";
+import { useDrawer } from '../drawer/RootDrawer';
+import eventBus from '../utils/EventBus';
 
 const MainThreadBlockExample = () => {
   const [result, setResult] = useState<number>(0);
   const [uiStatus, setUiStatus] = useState('界面可交互');
   const [isComputing, setIsComputing] = useState(false);
   const isMountedRef = useRef(true);
+      
+  const { openDrawer } = useDrawer();
 
   useEffect(() => {
+    eventBus.emit('changePage', false); // 非首页，禁用边缘手势
     return () => {
       isMountedRef.current = false; // 页面卸载
     };
@@ -101,10 +106,20 @@ const MainThreadBlockExample = () => {
       <TouchableOpacity 
         style={{ backgroundColor: 'green', padding: 15, margin: 10 }}
         onPress={() => {
+          eventBus.emit('changePage', true); // 返回首页，启用边缘手势
           router.back();
         }}
       >
         <Text style={{ color: 'white' }}>返回上一页</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={{ backgroundColor: 'green', padding: 15, margin: 10 }}
+        onPress={() => {
+          openDrawer();
+        }}
+      >
+        <Text style={{ color: 'white' }}>打开抽屉</Text>
       </TouchableOpacity>
     </View>
   );

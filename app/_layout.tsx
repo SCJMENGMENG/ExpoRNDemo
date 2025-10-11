@@ -1,13 +1,14 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-// import { DrawerProvider } from './drawer/CustomDrawer';
+import { useEffect, useState } from 'react';
 import { DrawerProvider } from './drawer/RootDrawer';
+import eventBus from './utils/EventBus';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -15,10 +16,22 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
+  // state and subscriptions must be declared before any early return to keep hook order stable
+  const [isHome, setIsHome] = useState(true);
+
+  useEffect(() => {
+    const handler = (isHomePage: boolean) => setIsHome(isHomePage);
+    eventBus.on('changePage', handler);
+    return () => {
+      eventBus.off('changePage', handler);
+    };
+  }, []);
+
   if (!loaded) {
     // Async font loading only occurs in development.
     return null;
   }
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -27,7 +40,7 @@ export default function RootLayout() {
                 <Text>1111</Text>
               </View> */}
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <DrawerProvider>
+        <DrawerProvider isHome={isHome}>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />

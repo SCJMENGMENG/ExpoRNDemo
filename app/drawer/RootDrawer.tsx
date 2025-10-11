@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { Animated, Button, Dimensions, FlatList, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
@@ -9,7 +9,7 @@ import {
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
 const DRAWER_RIGHT = SCREEN_WIDTH * 0.25;
-const EDGE_WIDTH = 15;
+const DEFAULT_EDGE_WIDTH = 15;
 
 type DrawerContextType = {
     openDrawer: () => void;
@@ -24,10 +24,11 @@ export const useDrawer = () => {
     return ctx;
 };
 
-export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
+export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode, isHome: boolean }) => {
     const router = useRouter();
     const translateX = useSharedValue(-DRAWER_WIDTH);
     const isDrawerOpenRef = useRef(false);
+    const EDGE_WIDTH = isHome ? DEFAULT_EDGE_WIDTH : 0; // 首页允许从边缘拖出，其他页面禁用边缘手势
 
     // 展开到全屏
     const openDrawer = () => {
@@ -70,7 +71,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     });
     // 遮罩层透明度，拖动时显示，未拖动时隐藏
     const maskOpacity = dragX.interpolate({
-        inputRange: [0, 40, SCREEN_WIDTH - EDGE_WIDTH],
+        inputRange: [0, Math.max(40, EDGE_WIDTH), SCREEN_WIDTH - EDGE_WIDTH],
         outputRange: [0, 0.1, 0.4],
         extrapolate: 'clamp',
     });
@@ -81,8 +82,8 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
         PanResponder.create({
             onStartShouldSetPanResponder: (evt, gestureState) => {
                 const dragValue = dragX.__getValue();
-                // 只在左侧40px或红色view区域或右侧关闭区域响应
-                if (evt.nativeEvent.pageX < 40 || dragValue > 0) return true;
+                // 只在左侧 EDGE_WIDTH 区域或红色view区域或右侧关闭区域响应
+                if ((EDGE_WIDTH > 0 && evt.nativeEvent.pageX < EDGE_WIDTH) || dragValue > 0) return true;
                 // 右侧关闭区域
                 if (
                     dragValue >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
@@ -171,7 +172,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                             <FlatList
                                 data={[
                                     { icon: '🏠', label: '首页', route: '/child/target' },
-                                    { icon: '👤', label: '个人中心', route: '/child/target' },
+                                    { icon: '👤', label: '个人中心', route: '/child/threads' },
                                     { icon: '⚙️', label: '设置', route: '/settings' },
                                     { icon: '🚪', label: '退出登录', route: '/logout' },
                                     // 可继续添加更多菜单项
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         top: 0,
-        // backgroundColor: 'red',
+        backgroundColor: 'red',
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         borderTopRightRadius: 16,
