@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { Animated, Button, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Animated, Button, Dimensions, FlatList, PanResponder, StyleSheet, Text, View } from 'react-native';
 import {
     useAnimatedStyle,
     useSharedValue
@@ -159,15 +159,28 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                     {/* Drawer 层 */}
                     <Animated.View style={[styles.drawer, drawerStyle]}>
                         <View style={{ flex: 1, padding: 20 }}>
-                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 20 }}>菜单</Text>
-                            <Text style={styles.menuItem}>🏠 首页</Text>
-                            <Text style={styles.menuItem}>👤 个人中心</Text>
-                            <Text style={styles.menuItem}>⚙️ 设置</Text>
-                            <Text style={styles.menuItem}>🚪 退出登录</Text>
+                            <View style={{height:50}}/>
                             <Button title="关闭菜单" onPress={() => {
                                 closeDrawer()
                                 console.log('closeDrawer')
                             }} />
+                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 20 }}>菜单</Text>
+                            {/* 菜单列表可上下滑动 */}
+                            <FlatList
+                                data={[
+                                    { icon: '🏠', label: '首页' },
+                                    { icon: '👤', label: '个人中心' },
+                                    { icon: '⚙️', label: '设置' },
+                                    { icon: '🚪', label: '退出登录' },
+                                    // 可继续添加更多菜单项
+                                ]}
+                                keyExtractor={item => item.label}
+                                renderItem={({ item }) => (
+                                    <Text style={styles.menuItem}>{item.icon} {item.label}</Text>
+                                )}
+                                showsVerticalScrollIndicator={false}
+                                style={{ flex: 1 }}
+                            />
                         </View>
                     </Animated.View>
                     {/* 右侧关闭区域：透明View，支持滑动和点击 */}
