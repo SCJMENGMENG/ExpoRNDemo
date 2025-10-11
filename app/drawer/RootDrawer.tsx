@@ -1,10 +1,11 @@
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { Animated, Button, Dimensions, FlatList, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
 import {
     useAnimatedStyle,
     useSharedValue
 } from 'react-native-reanimated';
+import DrawerContent from './DrawerContent';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
@@ -161,37 +162,7 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
                     </Animated.Text> */}
                     {/* Drawer 层 */}
                     <Animated.View style={[styles.drawer, drawerStyle]}>
-                        <View style={{ flex: 1, padding: 20 }}>
-                            <View style={{ height: 50 }} />
-                            <Button title="关闭菜单" onPress={() => {
-                                closeDrawer()
-                                console.log('closeDrawer')
-                            }} />
-                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 20 }}>菜单</Text>
-                            {/* 菜单列表可上下滑动 */}
-                            <FlatList
-                                data={[
-                                    { icon: '🏠', label: '首页', route: '/child/target' },
-                                    { icon: '👤', label: '个人中心', route: '/child/threads' },
-                                    { icon: '⚙️', label: '设置', route: '/settings' },
-                                    { icon: '🚪', label: '退出登录', route: '/logout' },
-                                    // 可继续添加更多菜单项
-                                ]}
-                                keyExtractor={item => item.label}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            router.push(item.route as any);
-                                            closeDrawer();
-                                        }}
-                                    >
-                                        <Text style={styles.menuItem}>{item.icon} {item.label}</Text>
-                                    </TouchableOpacity>
-                                )}
-                                showsVerticalScrollIndicator={false}
-                                style={{ flex: 1 }}
-                            />
-                        </View>
+                        <DrawerContent closeDrawer={closeDrawer} />
                     </Animated.View>
                     {/* 右侧关闭区域：透明View，支持滑动和点击 */}
                     {isDrawerOpenRef.current && (
