@@ -1,5 +1,6 @@
+import { useRouter } from 'expo-router';
 import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { Animated, Button, Dimensions, FlatList, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Animated, Button, Dimensions, FlatList, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
     useAnimatedStyle,
     useSharedValue
@@ -24,6 +25,7 @@ export const useDrawer = () => {
 };
 
 export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
+    const router = useRouter();
     const translateX = useSharedValue(-DRAWER_WIDTH);
     const isDrawerOpenRef = useRef(false);
 
@@ -159,7 +161,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                     {/* Drawer 层 */}
                     <Animated.View style={[styles.drawer, drawerStyle]}>
                         <View style={{ flex: 1, padding: 20 }}>
-                            <View style={{height:50}}/>
+                            <View style={{ height: 50 }} />
                             <Button title="关闭菜单" onPress={() => {
                                 closeDrawer()
                                 console.log('closeDrawer')
@@ -168,15 +170,22 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                             {/* 菜单列表可上下滑动 */}
                             <FlatList
                                 data={[
-                                    { icon: '🏠', label: '首页' },
-                                    { icon: '👤', label: '个人中心' },
-                                    { icon: '⚙️', label: '设置' },
-                                    { icon: '🚪', label: '退出登录' },
+                                    { icon: '🏠', label: '首页', route: '/child/target' },
+                                    { icon: '👤', label: '个人中心', route: '/child/target' },
+                                    { icon: '⚙️', label: '设置', route: '/settings' },
+                                    { icon: '🚪', label: '退出登录', route: '/logout' },
                                     // 可继续添加更多菜单项
                                 ]}
                                 keyExtractor={item => item.label}
                                 renderItem={({ item }) => (
-                                    <Text style={styles.menuItem}>{item.icon} {item.label}</Text>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            router.push(item.route as any);
+                                            closeDrawer();
+                                        }}
+                                    >
+                                        <Text style={styles.menuItem}>{item.icon} {item.label}</Text>
+                                    </TouchableOpacity>
                                 )}
                                 showsVerticalScrollIndicator={false}
                                 style={{ flex: 1 }}
@@ -217,7 +226,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         top: 0,
-        backgroundColor: 'red',
+        // backgroundColor: 'red',
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         borderTopRightRadius: 16,
