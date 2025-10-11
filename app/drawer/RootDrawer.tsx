@@ -26,13 +26,14 @@ export const useDrawer = () => {
 export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     const translateX = useSharedValue(-DRAWER_WIDTH);
 
+    // 展开到全屏
     const openDrawer = () => {
         Animated.spring(dragX, {
             toValue: SCREEN_WIDTH - EDGE_WIDTH,
             useNativeDriver: false,
         }).start();
     };
-
+    // 收起
     const closeDrawer = () => {
         Animated.spring(dragX, {
             toValue: 0,
@@ -102,34 +103,20 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                     startDragXRef.current >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
                     velocity < LEFT_VELOCITY_THRESHOLD
                 ) {
-                    Animated.spring(dragX, {
-                        toValue: 0,
-                        useNativeDriver: false,
-                    }).start();
+                    closeDrawer();
                     return;
                 }
                 if (
                     endValue > DRAWER_DISTANCE_THRESHOLD ||
                     velocity > RIGHT_VELOCITY_THRESHOLD
                 ) {
-                    // 展开到全屏
-                    Animated.spring(dragX, {
-                        toValue: SCREEN_WIDTH - EDGE_WIDTH,
-                        useNativeDriver: false,
-                    }).start();
+                    openDrawer();
                 } else {
-                    // 收起
-                    Animated.spring(dragX, {
-                        toValue: 0,
-                        useNativeDriver: false,
-                    }).start();
+                    closeDrawer();
                 }
             },
             onPanResponderTerminate: () => {
-                Animated.spring(dragX, {
-                    toValue: 0,
-                    useNativeDriver: false,
-                }).start();
+                closeDrawer();
             },
         })
     ).current;
