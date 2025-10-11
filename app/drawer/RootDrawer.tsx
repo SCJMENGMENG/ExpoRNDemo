@@ -68,7 +68,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     // 遮罩层透明度，拖动时显示，未拖动时隐藏
     const maskOpacity = dragX.interpolate({
         inputRange: [0, 40, SCREEN_WIDTH - EDGE_WIDTH],
-        outputRange: [0, 0.16, 0.3],
+        outputRange: [0, 0.1, 0.4],
         extrapolate: 'clamp',
     });
     // 跟手拖动：记录初始dragX
@@ -172,7 +172,6 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                                 height: SCREEN_HEIGHT,
                                 backgroundColor: 'transparent',
                             }}
-                        // 不加 onPress，交由 panResponder 处理
                         />
                     )}
                 </Animated.View>
