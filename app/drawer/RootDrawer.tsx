@@ -5,9 +5,9 @@ import {
     useSharedValue
 } from 'react-native-reanimated';
 
-const { width } = Dimensions.get('window');
-const DRAWER_WIDTH = width * 0.75;
-const DRAWER_Right = width * 0.25;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
+const DRAWER_Right = SCREEN_WIDTH * 0.25;
 const EDGE_WIDTH = 15;
 
 type DrawerContextType = {
@@ -46,7 +46,6 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     }));
 
     // 拖动红色view动画
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
     const dragX = useRef(new Animated.Value(0)).current;
 
     // 滑动速度阈值常量
@@ -126,22 +125,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
             <View style={{ flex: 1 }}>
                 {/* 左侧可拖动红色view */}
                 <Animated.View
-                    style={[
-                        {
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            backgroundColor: 'red',
-                            justifyContent: 'flex-start',
-                            alignItems: 'flex-start',
-                            borderTopRightRadius: 16,
-                            borderBottomRightRadius: 16,
-                            overflow: 'hidden',
-                            width: widthAnim,
-                            height: SCREEN_HEIGHT,
-                            zIndex: 10,
-                        },
-                    ]}
+                    style={[styles.drawerBase, { width: widthAnim }]}
                     {...panResponder.panHandlers}
                 >
                     {/* <Animated.Text style={{ color: '#fff', fontSize: fontSizeAnim, marginLeft: 8, marginTop: 8 }}>
@@ -169,16 +153,7 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                 {/* 遮罩层 */}
                 <Animated.View
                     pointerEvents="none"
-                    style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        width: SCREEN_WIDTH,
-                        height: SCREEN_HEIGHT,
-                        backgroundColor: 'rgba(0,0,0,1)',
-                        opacity: maskOpacity,
-                        zIndex: 9,
-                    }}
+                    style={[styles.mask, { opacity: maskOpacity }]}
                 />
             </View>
         </DrawerContext.Provider>
@@ -186,6 +161,20 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const styles = StyleSheet.create({
+    drawerBase: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        backgroundColor: 'red',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+        borderTopRightRadius: 16,
+        borderBottomRightRadius: 16,
+        overflow: 'hidden',
+
+        height: SCREEN_HEIGHT,
+        zIndex: 10,
+    },
     drawer: {
         position: 'absolute',
         right: DRAWER_Right,
@@ -198,6 +187,15 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 6,
         elevation: 10,
+    },
+    mask: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT,
+        backgroundColor: 'rgba(0,0,0,1)',
+        zIndex: 9,
     },
     menuItem: {
         fontSize: 20,
