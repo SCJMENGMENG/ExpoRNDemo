@@ -1,6 +1,7 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
-import { useWorklet, useRunOnJS } from "react-native-worklets-core";
+import { useRunOnJS, useWorklet } from "react-native-worklets-core";
 
 const MainThreadBlockExample = () => {
   const [result, setResult] = useState<number>(0);
@@ -77,6 +78,7 @@ const MainThreadBlockExample = () => {
     Alert.alert('UI测试', '如果点击后能立即弹出此框，说明界面未卡住。');
   };
 
+  const router = useRouter();
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>UI状态: {uiStatus}</Text>
@@ -94,6 +96,15 @@ const MainThreadBlockExample = () => {
         onPress={testUIResponsiveness}
       >
         <Text style={{ color: 'white' }}>测试界面响应性</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={{ backgroundColor: 'green', padding: 15, margin: 10 }}
+        onPress={() => {
+          router.back();
+        }}
+      >
+        <Text style={{ color: 'white' }}>返回上一页</Text>
       </TouchableOpacity>
     </View>
   );
