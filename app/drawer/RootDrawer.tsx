@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { Animated, Button, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 import {
     useAnimatedStyle,
@@ -25,6 +25,7 @@ export const useDrawer = () => {
 
 export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     const translateX = useSharedValue(-DRAWER_WIDTH);
+    const isDrawerOpenRef = useRef(false);
 
     // 展开到全屏
     const openDrawer = () => {
@@ -135,6 +136,15 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
         })
     ).current;
 
+    useEffect(() => {
+        const listener = dragX.addListener(({ value }) => {
+            isDrawerOpenRef.current = value >= SCREEN_WIDTH - EDGE_WIDTH - 2;
+        });
+        return () => {
+            dragX.removeListener(listener);
+        };
+    }, [dragX, SCREEN_WIDTH, EDGE_WIDTH]);
+
     return (
         <DrawerContext.Provider value={{ openDrawer, closeDrawer }}>
             <View style={{ flex: 1 }}>
@@ -161,14 +171,14 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                         </View>
                     </Animated.View>
                     {/* 右侧关闭区域：透明View，支持滑动和点击 */}
-                    {((dragX as any).__getValue() >= SCREEN_WIDTH - EDGE_WIDTH - 2) && (
+                    {isDrawerOpenRef.current && (
                         <View
                             style={{
                                 position: 'absolute',
                                 zIndex: 101,
-                                right: EDGE_WIDTH,
+                                right: 0,
                                 top: 0,
-                                width: DRAWER_RIGHT - EDGE_WIDTH,
+                                width: DRAWER_RIGHT,
                                 height: SCREEN_HEIGHT,
                                 backgroundColor: 'transparent',
                             }}
@@ -194,7 +204,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         top: 0,
-        // backgroundColor: 'red',
+        backgroundColor: 'red',
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         borderTopRightRadius: 16,
