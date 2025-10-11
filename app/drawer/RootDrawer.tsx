@@ -7,7 +7,7 @@ import {
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
-const DRAWER_Right = SCREEN_WIDTH * 0.25;
+const DRAWER_RIGHT = SCREEN_WIDTH * 0.25;
 const EDGE_WIDTH = 15;
 
 type DrawerContextType = {
@@ -73,12 +73,19 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     });
     // 跟手拖动：记录初始dragX
     const startDragXRef = useRef(0);
+    // 右侧关闭区域支持滑动和点击
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: (evt, gestureState) => {
-                // 只在左侧40px或红色view区域响应
                 const dragValue = dragX.__getValue();
-                return evt.nativeEvent.pageX < 40 || dragValue > 0;
+                // 只在左侧40px或红色view区域或右侧关闭区域响应
+                if (evt.nativeEvent.pageX < 40 || dragValue > 0) return true;
+                // 右侧关闭区域
+                if (
+                    dragValue >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
+                    evt.nativeEvent.pageX > SCREEN_WIDTH - DRAWER_RIGHT
+                ) return true;
+                return false;
             },
             onPanResponderGrant: () => {
                 startDragXRef.current = dragX.__getValue();
@@ -92,11 +99,19 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
             },
             onPanResponderRelease: (evt, gestureState) => {
                 console.log('滑动速度 vx:', gestureState.vx);
+                // 判断是否为“点击”右侧关闭区域
+                if (
+                    startDragXRef.current >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
+                    evt.nativeEvent.pageX > SCREEN_WIDTH - DRAWER_RIGHT &&
+                    Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5
+                ) {
+                    closeDrawer();
+                    return;
+                }
                 let endValue = startDragXRef.current + gestureState.dx;
                 if (endValue < 0) endValue = 0;
                 if (endValue > SCREEN_WIDTH - EDGE_WIDTH) endValue = SCREEN_WIDTH - EDGE_WIDTH;
                 const velocity = gestureState.vx;
-
                 // 如果完全展开且左滑速度足够大，直接收起
                 if (
                     startDragXRef.current >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
@@ -145,6 +160,21 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
                             }} />
                         </View>
                     </Animated.View>
+                    {/* 右侧关闭区域：透明View，支持滑动和点击 */}
+                    {((dragX as any).__getValue() >= SCREEN_WIDTH - EDGE_WIDTH - 2) && (
+                        <View
+                            style={{
+                                position: 'absolute',
+                                zIndex: 101,
+                                right: EDGE_WIDTH,
+                                top: 0,
+                                width: DRAWER_RIGHT - EDGE_WIDTH,
+                                height: SCREEN_HEIGHT,
+                                backgroundColor: 'transparent',
+                            }}
+                        // 不加 onPress，交由 panResponder 处理
+                        />
+                    )}
                 </Animated.View>
 
                 {/* 主内容 */}
@@ -177,7 +207,7 @@ const styles = StyleSheet.create({
     },
     drawer: {
         position: 'absolute',
-        right: DRAWER_Right,
+        right: DRAWER_RIGHT,
         top: 0,
         bottom: 0,
         width: DRAWER_WIDTH,
