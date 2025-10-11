@@ -49,8 +49,8 @@ export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     const dragX = useRef(new Animated.Value(0)).current;
 
     // 滑动速度阈值常量
-    const LEFT_VELOCITY_THRESHOLD = -0.9; // 左滑收起
-    const RIGHT_VELOCITY_THRESHOLD = 0.9; // 右滑展开
+    const LEFT_VELOCITY_THRESHOLD = -0.5; // 左滑收起
+    const RIGHT_VELOCITY_THRESHOLD = 0.5; // 右滑展开
 
     // 距离阈值常量
     const DRAWER_DISTANCE_THRESHOLD = SCREEN_WIDTH / 2; // 展开/收起距离
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         top: 0,
-        backgroundColor: 'red',
+        // backgroundColor: 'red',
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         borderTopRightRadius: 16,
