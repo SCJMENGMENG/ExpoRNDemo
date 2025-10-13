@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
 import {
@@ -33,10 +32,16 @@ export const useDrawer = () => {
 };
 
 export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode, isHome: boolean }) => {
-  const router = useRouter();
-  const translateX = useSharedValue(-DRAWER_WIDTH);
   const isDrawerOpenRef = useRef(false);
   const EDGE_WIDTH = isHome ? DEFAULT_EDGE_WIDTH : 0; // 首页允许从边缘拖出，其他页面禁用边缘手势
+  const dragValueRef = useRef(0);
+
+  const clamp = (x: number) => {
+    const max = SCREEN_WIDTH - EDGE_WIDTH;
+    if (x < 0) return 0;
+    if (x > max) return max;
+    return x;
+  };
 
   // 展开到全屏
   const openDrawer = () => {
@@ -52,10 +57,6 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
       useNativeDriver: false,
     }).start();
   };
-
-  const drawerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
 
   // 拖动红色view动画
   const dragX = useRef(new Animated.Value(0)).current;
@@ -82,7 +83,7 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: (evt, gestureState) => {
-        const dragValue = dragX.__getValue();
+        const dragValue = dragValueRef.current;
         // 只在左侧 EDGE_WIDTH 区域或红色view区域或右侧关闭区域响应
         if ((EDGE_WIDTH > 0 && evt.nativeEvent.pageX < EDGE_WIDTH) || dragValue > 0) return true;
         // 右侧关闭区域
@@ -93,13 +94,11 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
         return false;
       },
       onPanResponderGrant: () => {
-        startDragXRef.current = dragX.__getValue();
+        startDragXRef.current = dragValueRef.current;
       },
       onPanResponderMove: (evt, gestureState) => {
         // 跟手拖动，允许来回拖动
-        let newDx = startDragXRef.current + gestureState.dx;
-        if (newDx < 0) newDx = 0;
-        if (newDx > SCREEN_WIDTH - EDGE_WIDTH) newDx = SCREEN_WIDTH - EDGE_WIDTH;
+        const newDx = clamp(startDragXRef.current + gestureState.dx);
         dragX.setValue(newDx);
       },
       onPanResponderRelease: (evt, gestureState) => {
@@ -113,9 +112,7 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
           closeDrawer();
           return;
         }
-        let endValue = startDragXRef.current + gestureState.dx;
-        if (endValue < 0) endValue = 0;
-        if (endValue > SCREEN_WIDTH - EDGE_WIDTH) endValue = SCREEN_WIDTH - EDGE_WIDTH;
+        const endValue = clamp(startDragXRef.current + gestureState.dx);
         const velocity = gestureState.vx;
         // 如果完全展开且左滑速度足够大，直接收起
         if (
@@ -143,11 +140,24 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
   useEffect(() => {
     const listener = dragX.addListener(({ value }) => {
       isDrawerOpenRef.current = value >= SCREEN_WIDTH - EDGE_WIDTH - 2;
+      dragValueRef.current = value;
     });
     return () => {
       dragX.removeListener(listener);
     };
   }, [dragX, SCREEN_WIDTH, EDGE_WIDTH]);
+
+  const translateX = useSharedValue(-DRAWER_WIDTH);
+  const drawerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  // 用Animated插值版：根据 dragX 更新 translateX
+  const drawerTranslate = dragX.interpolate({
+    inputRange: [0, SCREEN_WIDTH - EDGE_WIDTH],
+    outputRange: [-DRAWER_WIDTH, 0],
+    extrapolate: 'clamp',
+  });
 
   return (
     <DrawerContext.Provider value={{ openDrawer, closeDrawer }}>
@@ -162,6 +172,10 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
                     </Animated.Text> */}
           {/* Drawer 层 */}
           <Animated.View style={[styles.drawer, drawerStyle]}>
+          {/* <Animated.View style={[ // Animated插值版
+            styles.drawer,
+            { transform: [{ translateX: drawerTranslate }] },
+          ]}> */}
             <DrawerContent closeDrawer={closeDrawer} />
           </Animated.View>
           {/* 右侧关闭区域：透明View，支持滑动和点击 */}
@@ -211,6 +225,7 @@ const styles = StyleSheet.create({
   drawer: {
     position: 'absolute',
     right: DRAWER_RIGHT,
+    // left: 0, // Animated插值版
     top: 0,
     bottom: 0,
     width: DRAWER_WIDTH,
