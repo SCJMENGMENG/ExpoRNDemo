@@ -1,14 +1,12 @@
-import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
-import {
-  useAnimatedStyle,
-  useSharedValue
-} from 'react-native-reanimated';
+import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Reanimated, { Extrapolate, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import DrawerContent from './DrawerContent';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
-const DRAWER_RIGHT = SCREEN_WIDTH * 0.25;
+const DRAWER_WIDTH = SCREEN_WIDTH * 0.8;
+const DRAWER_RIGHT = SCREEN_WIDTH * 0.2;
 const DEFAULT_EDGE_WIDTH = 15;
 
 // 滑动速度阈值常量
@@ -31,7 +29,8 @@ export const useDrawer = () => {
   return ctx;
 };
 
-export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode, isHome: boolean }) => {
+
+export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode; isHome: boolean }) => {
   const isDrawerOpenRef = useRef(false);
   const EDGE_WIDTH = isHome ? DEFAULT_EDGE_WIDTH : 0; // 首页允许从边缘拖出，其他页面禁用边缘手势
   const dragValueRef = useRef(0);
@@ -43,165 +42,150 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
     return x;
   };
 
-  // 展开到全屏
+  // 单一共享值，0 ~ (SCREEN_WIDTH - EDGE_WIDTH)
+  const dragX = useSharedValue(0);
+  const startX = useSharedValue(0);
+
+  const springCfg = { damping: 18, stiffness: 180 };
+
   const openDrawer = () => {
-    Animated.spring(dragX, {
-      toValue: SCREEN_WIDTH - EDGE_WIDTH,
-      useNativeDriver: false,
-    }).start();
+    dragX.value = withSpring(SCREEN_WIDTH - EDGE_WIDTH, springCfg);
   };
-  // 收起
   const closeDrawer = () => {
-    Animated.spring(dragX, {
-      toValue: 0,
-      useNativeDriver: false,
-    }).start();
+    dragX.value = withSpring(0, springCfg);
   };
 
-  // 拖动红色view动画
-  const dragX = useRef(new Animated.Value(0)).current;
-
-  const widthAnim = dragX.interpolate({
-    inputRange: [0, SCREEN_WIDTH - EDGE_WIDTH],
-    outputRange: [EDGE_WIDTH, SCREEN_WIDTH],
-    extrapolate: 'clamp',
+  // 样式派生
+  const drawerStyle = useAnimatedStyle(() => {
+    const tx = interpolate(dragX.value, [0, SCREEN_WIDTH - EDGE_WIDTH], [-DRAWER_WIDTH, 0], Extrapolate.CLAMP);
+    return { transform: [{ translateX: tx }] };
   });
-  const fontSizeAnim = dragX.interpolate({
-    inputRange: [0, SCREEN_WIDTH - EDGE_WIDTH],
-    outputRange: [10, 60],
-    extrapolate: 'clamp',
+  const redStyle = useAnimatedStyle(() => {
+    const w = interpolate(dragX.value, [0, SCREEN_WIDTH - EDGE_WIDTH], [EDGE_WIDTH, SCREEN_WIDTH], Extrapolate.CLAMP);
+    return { width: w };
   });
-  // 遮罩层透明度，拖动时显示，未拖动时隐藏
-  const maskOpacity = dragX.interpolate({
-    inputRange: [0, Math.max(40, EDGE_WIDTH), SCREEN_WIDTH - EDGE_WIDTH],
-    outputRange: [0, 0.1, 0.4],
-    extrapolate: 'clamp',
-  });
-  // 跟手拖动：记录初始dragX
-  const startDragXRef = useRef(0);
-  // 右侧关闭区域支持滑动和点击
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: (evt, gestureState) => {
-        const dragValue = dragValueRef.current;
-        // 只在左侧 EDGE_WIDTH 区域或红色view区域或右侧关闭区域响应
-        if ((EDGE_WIDTH > 0 && evt.nativeEvent.pageX < EDGE_WIDTH) || dragValue > 0) return true;
-        // 右侧关闭区域
-        if (
-          dragValue >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
-          evt.nativeEvent.pageX > SCREEN_WIDTH - DRAWER_RIGHT
-        ) return true;
-        return false;
-      },
-      onPanResponderGrant: () => {
-        startDragXRef.current = dragValueRef.current;
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        // 跟手拖动，允许来回拖动
-        const newDx = clamp(startDragXRef.current + gestureState.dx);
-        dragX.setValue(newDx);
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        console.log('滑动速度 vx:', gestureState.vx);
-        // 判断是否为“点击”右侧关闭区域
-        if (
-          startDragXRef.current >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
-          evt.nativeEvent.pageX > SCREEN_WIDTH - DRAWER_RIGHT &&
-          Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5
-        ) {
-          closeDrawer();
-          return;
-        }
-        const endValue = clamp(startDragXRef.current + gestureState.dx);
-        const velocity = gestureState.vx;
-        // 如果完全展开且左滑速度足够大，直接收起
-        if (
-          startDragXRef.current >= SCREEN_WIDTH - EDGE_WIDTH - 2 &&
-          velocity < LEFT_VELOCITY_THRESHOLD
-        ) {
-          closeDrawer();
-          return;
-        }
-        if (
-          endValue > DRAWER_DISTANCE_THRESHOLD ||
-          velocity > RIGHT_VELOCITY_THRESHOLD
-        ) {
-          openDrawer();
-        } else {
-          closeDrawer();
-        }
-      },
-      onPanResponderTerminate: () => {
-        closeDrawer();
-      },
-    })
-  ).current;
-
-  useEffect(() => {
-    const listener = dragX.addListener(({ value }) => {
-      isDrawerOpenRef.current = value >= SCREEN_WIDTH - EDGE_WIDTH - 2;
-      dragValueRef.current = value;
-    });
-    return () => {
-      dragX.removeListener(listener);
-    };
-  }, [dragX, SCREEN_WIDTH, EDGE_WIDTH]);
-
-  const translateX = useSharedValue(-DRAWER_WIDTH);
-  const drawerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
+  const maskStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(dragX.value, [0, Math.max(40, EDGE_WIDTH), SCREEN_WIDTH - EDGE_WIDTH], [0, 0.1, 0.4], Extrapolate.CLAMP),
   }));
 
-  // 用Animated插值版：根据 dragX 更新 translateX
-  const drawerTranslate = dragX.interpolate({
-    inputRange: [0, SCREEN_WIDTH - EDGE_WIDTH],
-    outputRange: [-DRAWER_WIDTH, 0],
-    extrapolate: 'clamp',
-  });
+  // 遮罩可点状态，仅在开合状态切换时同步到 JS
+  const [maskTouchable, setMaskTouchable] = useState(false);
+  const setOpenJS = (open: boolean) => {
+    isDrawerOpenRef.current = open;
+    setMaskTouchable(open);
+  };
+  useAnimatedReaction(
+    () => dragX.value >= Math.max(8, EDGE_WIDTH * 0.5),
+    (isOpen, wasOpen) => {
+      if (isOpen !== wasOpen) {
+        runOnJS(setOpenJS)(isOpen);
+      }
+    },
+  );
+
+  // 完全展开状态（仅当抽屉到达最右位置才为 true，用于右侧关闭热区渲染）
+  const [isFullyOpen, setIsFullyOpen] = useState(false);
+  const setFullyOpenJS = (full: boolean) => setIsFullyOpen(full);
+  useAnimatedReaction(
+    () => dragX.value >= SCREEN_WIDTH - EDGE_WIDTH - 2,
+    (full, wasFull) => {
+      if (full !== wasFull) {
+        runOnJS(setFullyOpenJS)(full);
+      }
+    },
+  );
+
+  // 手势（Pan + Tap）
+  const panGesture = useMemo(() => {
+    return Gesture.Pan()
+      .onStart(() => {
+        'worklet';
+        startX.value = dragX.value;
+      })
+      .onUpdate((e) => {
+        'worklet';
+        let x = startX.value + e.translationX;
+        if (x < 0) x = 0;
+        const max = SCREEN_WIDTH - EDGE_WIDTH;
+        if (x > max) x = max;
+        dragX.value = x;
+      })
+      .onEnd((e) => {
+        'worklet';
+        const endValue = Math.max(0, Math.min(startX.value + e.translationX, SCREEN_WIDTH - EDGE_WIDTH));
+        const vNorm = e.velocityX / 1000; // normalize to ~PanResponder scale
+        if (endValue > DRAWER_DISTANCE_THRESHOLD || vNorm > RIGHT_VELOCITY_THRESHOLD) {
+          dragX.value = withSpring(SCREEN_WIDTH - EDGE_WIDTH, springCfg);
+        } else if (vNorm < LEFT_VELOCITY_THRESHOLD) {
+          dragX.value = withSpring(0, springCfg);
+        } else {
+          const mid = (SCREEN_WIDTH - EDGE_WIDTH) / 2;
+          dragX.value = withSpring(endValue >= mid ? (SCREEN_WIDTH - EDGE_WIDTH) : 0, springCfg);
+        }
+      });
+  }, [EDGE_WIDTH]);
+
+  // 左边缘只在首页可触发
+  const edgeGesture = useMemo(() => {
+    return Gesture.Pan()
+      .hitSlop({ left: 0, width: EDGE_WIDTH })
+      .onStart(() => { 'worklet'; startX.value = dragX.value; })
+      .onUpdate((e) => {
+        'worklet';
+        let x = startX.value + e.translationX;
+        if (x < 0) x = 0;
+        const max = SCREEN_WIDTH - EDGE_WIDTH;
+        if (x > max) x = max;
+        dragX.value = x;
+      })
+      .onEnd((e) => {
+        'worklet';
+        const endValue = Math.max(0, Math.min(startX.value + e.translationX, SCREEN_WIDTH - EDGE_WIDTH));
+        const vNorm = e.velocityX / 1000;
+        if (endValue > DRAWER_DISTANCE_THRESHOLD || vNorm > RIGHT_VELOCITY_THRESHOLD) {
+          dragX.value = withSpring(SCREEN_WIDTH - EDGE_WIDTH, springCfg);
+        } else {
+          dragX.value = withSpring(0, springCfg);
+        }
+      });
+  }, [EDGE_WIDTH]);
+
+  const tapMaskGesture = useMemo(() => Gesture.Tap().onEnd(() => { 'worklet'; dragX.value = withSpring(0, springCfg); }), []);
 
   return (
     <DrawerContext.Provider value={{ openDrawer, closeDrawer }}>
       <View style={{ flex: 1 }}>
-        {/* 左侧可拖动红色view */}
-        <Animated.View
-          style={[styles.drawerBase, { width: widthAnim }]}
-          {...panResponder.panHandlers}
-        >
-          {/* <Animated.Text style={{ color: '#fff', fontSize: fontSizeAnim, marginLeft: 8, marginTop: 8 }}>
-                        123
-                    </Animated.Text> */}
-          {/* Drawer 层 */}
-          <Animated.View style={[styles.drawer, drawerStyle]}>
-          {/* <Animated.View style={[ // Animated插值版
-            styles.drawer,
-            { transform: [{ translateX: drawerTranslate }] },
-          ]}> */}
-            <DrawerContent closeDrawer={closeDrawer} />
-          </Animated.View>
-          {/* 右侧关闭区域：透明View，支持滑动和点击 */}
-          {isDrawerOpenRef.current && (
-            <View
-              style={{
-                position: 'absolute',
-                zIndex: 101,
-                right: 0,
-                top: 0,
-                width: DRAWER_RIGHT,
-                height: SCREEN_HEIGHT,
-                backgroundColor: 'transparent',
-              }}
-            />
-          )}
-        </Animated.View>
+        {/* 左侧可拖动红色view（手势控制） */}
+        <GestureDetector gesture={panGesture}>
+          <Reanimated.View style={[styles.drawerBase, redStyle]}>
+            {/* Drawer 层 */}
+            <Reanimated.View style={[styles.drawer, drawerStyle]}>
+              <DrawerContent closeDrawer={closeDrawer} />
+            </Reanimated.View>
+          </Reanimated.View>
+        </GestureDetector>
 
         {/* 主内容 */}
         {children}
 
-        {/* 遮罩层 */}
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.mask, { opacity: maskOpacity }]}
-        />
+        {/* 遮罩层：仅展示，不拦截点击 */}
+        {maskTouchable ? (
+          <Reanimated.View pointerEvents="none" style={[styles.mask, maskStyle]} />
+        ) : null}
+
+        {/* 右侧关闭热区：抽屉展开后，点击右侧 DRAWER_RIGHT 关闭（置于抽屉之上） */}
+  {isFullyOpen ? (
+          <GestureDetector gesture={tapMaskGesture}>
+            <View style={[styles.rightCloseArea, { width: DRAWER_RIGHT, height: SCREEN_HEIGHT }]} />
+          </GestureDetector>
+        ) : null}
+
+        {/* 左侧边缘打开热区（仅首页启用） */}
+        {EDGE_WIDTH > 0 && (
+          <GestureDetector gesture={edgeGesture}>
+            <View style={[styles.edgeArea, { width: EDGE_WIDTH, height: SCREEN_HEIGHT }]} />
+          </GestureDetector>
+        )}
       </View>
     </DrawerContext.Provider>
   );
@@ -212,20 +196,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
-    backgroundColor: 'red',
+    backgroundColor: 'red',//'transparent',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
     borderTopRightRadius: 16,
     borderBottomRightRadius: 16,
     overflow: 'hidden',
-
     height: SCREEN_HEIGHT,
     zIndex: 10,
   },
   drawer: {
     position: 'absolute',
     right: DRAWER_RIGHT,
-    // left: 0, // Animated插值版
     top: 0,
     bottom: 0,
     width: DRAWER_WIDTH,
@@ -242,8 +224,22 @@ const styles = StyleSheet.create({
     top: 0,
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
-    backgroundColor: 'rgba(0,0,0,1)',
+    backgroundColor: 'yellow',//'rgba(0,0,0,1)',
     zIndex: 9,
+  },
+  edgeArea: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    backgroundColor: 'cyan',//'transparent',
+    zIndex: 11,
+  },
+  rightCloseArea: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    backgroundColor: 'blue',//'transparent',
+    zIndex: 200,
   },
   menuItem: {
     fontSize: 20,
