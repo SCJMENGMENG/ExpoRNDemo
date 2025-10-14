@@ -170,13 +170,23 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
       });
   }, [EDGE_WIDTH]);
 
-  const tapMaskGesture = useMemo(() => Gesture.Tap().onEnd(() => { 'worklet'; dragX.value = withSpring(0, springCfg); }), []);
+  // 红板点击：仅在完全展开时触发关闭
+  const tapDrawerGesture = useMemo(() =>
+    Gesture.Tap().onEnd(() => {
+      'worklet';
+      if (dragX.value >= SCREEN_WIDTH - EDGE_WIDTH - 2) {
+        dragX.value = withSpring(0, springCfg);
+      }
+    })
+    , [EDGE_WIDTH]);
+  // 抽屉容器（红板）手势：始终 Tap+Pan 组合，避免切换导致的手势中断
+  const drawerAreaGesture = useMemo(() => Gesture.Race(tapDrawerGesture, panGesture), [tapDrawerGesture, panGesture]);
 
   return (
     <DrawerContext.Provider value={{ openDrawer, closeDrawer }}>
       <View style={{ flex: 1 }}>
-        {/* 左侧可拖动红色view（手势控制） */}
-        <GestureDetector gesture={panGesture}>
+        {/* 左侧可拖动红色view（展开时支持点击关闭） */}
+        <GestureDetector gesture={drawerAreaGesture}>
           <Reanimated.View style={[styles.drawerBase, redStyle]}>
             {/* Drawer 层 */}
             <Reanimated.View style={[styles.drawer, drawerStyle]}>
@@ -193,12 +203,7 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
           <Reanimated.View pointerEvents="none" style={[styles.mask, maskStyle]} />
         ) : null}
 
-        {/* 右侧关闭热区：抽屉展开后，点击右侧 DRAWER_RIGHT 关闭（置于抽屉之上） */}
-  {isFullyOpen ? (
-          <GestureDetector gesture={tapMaskGesture}>
-            <View style={[styles.rightCloseArea, { width: DRAWER_RIGHT, height: SCREEN_HEIGHT }]} />
-          </GestureDetector>
-        ) : null}
+        {/* 右侧关闭热区已移除；点击关闭已加在红色抽屉容器上 */}
 
         {/* 左侧边缘打开热区（仅首页启用） */}
         {EDGE_WIDTH > 0 && (
@@ -253,13 +258,6 @@ const styles = StyleSheet.create({
     top: 0,
     backgroundColor: 'cyan',//'transparent',
     zIndex: 11,
-  },
-  rightCloseArea: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    backgroundColor: 'blue',//'transparent',
-    zIndex: 200,
   },
   menuItem: {
     fontSize: 20,
