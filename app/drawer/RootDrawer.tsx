@@ -171,10 +171,25 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
       });
   }, [EDGE_WIDTH]);
 
-  // 红板点击：仅在完全展开时触发关闭
+  // 红板点击：仅在完全展开时触发关闭；若点击命中白色 DrawerContent 区域则不关闭
   const tapDrawerGesture = useMemo(() =>
-    Gesture.Tap().onEnd(() => {
+    Gesture.Tap().onEnd((e) => {
       'worklet';
+      // 计算当前红板宽度
+      const w = interpolate(
+        dragX.value,
+        [0, SCREEN_WIDTH - EDGE_WIDTH],
+        [EDGE_WIDTH, SCREEN_WIDTH],
+        Extrapolate.CLAMP,
+      );
+      // 白板区域（相对红板坐标系）
+      const drawerLeft = w - DRAWER_RIGHT - DRAWER_WIDTH;
+      const drawerRight = w - DRAWER_RIGHT;
+      const insideWhiteDrawer = e.x >= drawerLeft && e.x <= drawerRight;
+      if (insideWhiteDrawer) {
+        return; // 点击在 DrawerContent 上，不触发收起
+      }
+      // 仅在完全展开时允许点击红板空白处收起
       if (dragX.value >= SCREEN_WIDTH - EDGE_WIDTH - 2) {
         dragX.value = withSpring(0, springCfg);
       }
