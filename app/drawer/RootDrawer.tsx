@@ -58,9 +58,10 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
   };
 
   // 样式派生
+  // Drawer 层保持与红板右侧恒定间距（right: DRAWER_RIGHT），不再做水平平移
+  // 这样在拖动过程中，白色 Drawer 与红色容器的间距始终为 DRAWER_RIGHT，避免“半屏才出现/半屏就消失”的现象
   const drawerStyle = useAnimatedStyle(() => {
-    const tx = interpolate(dragX.value, [0, SCREEN_WIDTH - EDGE_WIDTH], [-DRAWER_WIDTH, 0], Extrapolate.CLAMP);
-    return { transform: [{ translateX: tx }] };
+    return {};
   });
   const redStyle = useAnimatedStyle(() => {
     const w = interpolate(dragX.value, [0, SCREEN_WIDTH - EDGE_WIDTH], [EDGE_WIDTH, SCREEN_WIDTH], Extrapolate.CLAMP);
