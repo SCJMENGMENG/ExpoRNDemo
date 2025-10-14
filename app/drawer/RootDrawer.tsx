@@ -15,6 +15,8 @@ const RIGHT_VELOCITY_THRESHOLD = 0.5; // 右滑展开
 
 // 距离阈值常量
 const DRAWER_DISTANCE_THRESHOLD = SCREEN_WIDTH / 2; // 展开/收起距离
+const TAP_SLOP_PX = 3; // 轻点最小位移
+const TAP_VELOCITY_PX = 50; // 轻点最大速度（px/s）
 
 type DrawerContextType = {
   openDrawer: () => void;
@@ -112,16 +114,24 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
       })
       .onEnd((e) => {
         'worklet';
-        const endValue = Math.max(0, Math.min(startX.value + e.translationX, SCREEN_WIDTH - EDGE_WIDTH));
-        const vNorm = e.velocityX / 1000; // normalize to ~PanResponder scale
-        if (endValue > DRAWER_DISTANCE_THRESHOLD || vNorm > RIGHT_VELOCITY_THRESHOLD) {
-          dragX.value = withSpring(SCREEN_WIDTH - EDGE_WIDTH, springCfg);
-        } else if (vNorm < LEFT_VELOCITY_THRESHOLD) {
-          dragX.value = withSpring(0, springCfg);
-        } else {
-          const mid = (SCREEN_WIDTH - EDGE_WIDTH) / 2;
-          dragX.value = withSpring(endValue >= mid ? (SCREEN_WIDTH - EDGE_WIDTH) : 0, springCfg);
+        // 忽略轻点
+        if (Math.abs(e.translationX) < TAP_SLOP_PX && Math.abs(e.velocityX) < TAP_VELOCITY_PX) {
+          return;
         }
+        const endValue = Math.max(0, Math.min(startX.value + e.translationX, SCREEN_WIDTH - EDGE_WIDTH));
+        const vNorm = e.velocityX / 1000; // 归一化速度
+        // 速度优先
+        if (vNorm <= LEFT_VELOCITY_THRESHOLD) {
+          dragX.value = withSpring(0, springCfg);
+          return;
+        }
+        if (vNorm >= RIGHT_VELOCITY_THRESHOLD) {
+          dragX.value = withSpring(SCREEN_WIDTH - EDGE_WIDTH, springCfg);
+          return;
+        }
+        // 距离兜底（取中点）
+        const mid = (SCREEN_WIDTH - EDGE_WIDTH) / 2;
+        dragX.value = withSpring(endValue >= mid ? (SCREEN_WIDTH - EDGE_WIDTH) : 0, springCfg);
       });
   }, [EDGE_WIDTH]);
 
@@ -140,13 +150,23 @@ export const DrawerProvider = ({ children, isHome }: { children: React.ReactNode
       })
       .onEnd((e) => {
         'worklet';
+        // 忽略轻点
+        if (Math.abs(e.translationX) < TAP_SLOP_PX && Math.abs(e.velocityX) < TAP_VELOCITY_PX) {
+          return;
+        }
         const endValue = Math.max(0, Math.min(startX.value + e.translationX, SCREEN_WIDTH - EDGE_WIDTH));
         const vNorm = e.velocityX / 1000;
-        if (endValue > DRAWER_DISTANCE_THRESHOLD || vNorm > RIGHT_VELOCITY_THRESHOLD) {
-          dragX.value = withSpring(SCREEN_WIDTH - EDGE_WIDTH, springCfg);
-        } else {
+        // 速度优先
+        if (vNorm <= LEFT_VELOCITY_THRESHOLD) {
           dragX.value = withSpring(0, springCfg);
+          return;
         }
+        if (vNorm >= RIGHT_VELOCITY_THRESHOLD) {
+          dragX.value = withSpring(SCREEN_WIDTH - EDGE_WIDTH, springCfg);
+          return;
+        }
+        // 距离兜底（沿用阈值一半/中点也可，这里保持阈值判定）
+        dragX.value = withSpring(endValue > DRAWER_DISTANCE_THRESHOLD ? (SCREEN_WIDTH - EDGE_WIDTH) : 0, springCfg);
       });
   }, [EDGE_WIDTH]);
 
