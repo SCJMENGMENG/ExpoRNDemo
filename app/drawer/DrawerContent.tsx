@@ -1,10 +1,7 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Button, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-type Props = {
-  closeDrawer: () => void;
-};
+import { useDrawer } from './RootDrawer';
 
 const MENU = [
   { icon: '🏠', label: '首页', route: '/child/target' },
@@ -13,8 +10,9 @@ const MENU = [
   { icon: '🚪', label: '退出登录', route: '/logout' },
 ];
 
-export default function DrawerContent({ closeDrawer }: Props) {
+export default function DrawerContent() {
   const router = useRouter();
+  const { closeDrawer } = useDrawer();
 
   const onPress = (route: string) => {
     // router paths in this app may vary; force any path as any to avoid type errors
