@@ -1,4 +1,4 @@
-import RectEditor from '@/components/RectEditor';
+import RectEditor from '@/components/RectEditorSkia';
 import React from 'react';
 import {
   Dimensions,
