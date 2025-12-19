@@ -1,10 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import {
-    AppState,
-    Button,
-    ScrollView,
-    StyleSheet, Text, TouchableOpacity, View
+  AppState,
+  Button,
+  ScrollView,
+  StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
@@ -17,7 +17,7 @@ import DeviceInfo from 'react-native-device-info';
 const SECONDS_TO_SCAN_FOR = 10;
 const SERVICE_UUIDS: string[] = ["280f"];
 
-const encoder = new TextEncoder();  
+const encoder = new TextEncoder();
 const SERVICE_UUID = `12345678-1234-5678-1234-56789abcdef0`;
 const CHAR_OUTBOX = `12345678-1234-5678-1234-56789abcdef1`;
 
@@ -39,7 +39,7 @@ function HomeScreen() {
   const writeWithoutResponse = async (peripheralId: string, base64str: string) => {
     try {
       const data = Array.from(encoder.encode(base64str));
-      
+
       await BleManager.writeWithoutResponse(
         peripheralId,
         SERVICE_UUID,
@@ -62,10 +62,10 @@ function HomeScreen() {
       const model = await DeviceInfo.getModel();
       const systemName = DeviceInfo.getSystemName();
       const uniqueId = await DeviceInfo.getUniqueId();
-      
+
       const deviceIdentifier = `${model.replace(/ /g, "")}_${systemName}_${uniqueId}`;
       const timestamp = Date.now();
-      
+
       // 生成心跳命令，你可以根据具体协议修改这个格式
       const heartbeatCommand = `HEARTBEAT:${deviceIdentifier}:${timestamp}`;
       return "EDE4AtoBNGlQaG9uZVhTTWF4X2lPU180QzM3M0FCRC1GOURDLTRBNDctQTZEQi01MzQ3NjZFRDc4Njk=";// heartbeatCommand;
@@ -227,23 +227,23 @@ function HomeScreen() {
     (async () => {
       if (connectedPeripheral && isConnected) {
         const heartbeatCommand = await generateHeartbeatCommand();
-        
+
         // 清除之前的心跳定时器
         if (heartbeatId.current) {
           clearInterval(heartbeatId.current);
           heartbeatId.current = null;
         }
-        
+
         // 立即发送第一次心跳
         writeWithoutResponse(connectedPeripheral, heartbeatCommand);
-        
+
         // 设置定时器，每3秒发送一次心跳
         heartbeatId.current = setInterval(async () => {
           const cmd = await generateHeartbeatCommand();
           console.log(`发送心跳命令到机器人: cmd:${cmd}`);
           writeWithoutResponse(connectedPeripheral, cmd);
         }, 1000 * 3);
-        
+
         console.log('心跳定时器已启动，间隔3秒');
       } else {
         // 如果没有连接，清除心跳定时器
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
 
 function TabTwoScreen() {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'yellow' }}>
       <Text>Tab Two 内容</Text>
     </View>
   );
