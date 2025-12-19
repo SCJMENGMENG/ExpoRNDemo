@@ -1,11 +1,11 @@
+import { Canvas, Path, Skia, Image as SkiaImage, useImage } from '@shopify/react-native-skia';
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Canvas, Path, Circle, Skia } from '@shopify/react-native-skia';
-import Animated, {
-  useSharedValue,
-  useDerivedValue,
-} from 'react-native-reanimated';
+import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 export default function RectEditorSkia() {
   // 矩形参数
@@ -123,6 +123,8 @@ export default function RectEditorSkia() {
       isRotating.value = false;
     });
 
+  const img = useImage(require('@/assets/images/favicon.png'));
+
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={panGesture}>
@@ -142,11 +144,19 @@ export default function RectEditorSkia() {
             />
 
             {/* 旋转手柄 */}
-            <Circle
+            {/* <Circle
               cx={rotateHandleX}
               cy={rotateHandleY}
               r={8}
               color="#FF9800"
+            /> */}
+            <SkiaImage
+              image={img}
+              x={rotateHandleX}
+              y={rotateHandleY}
+              width={24}
+              height={24}
+              fit="contain"
             />
           </Canvas>
         </View>
