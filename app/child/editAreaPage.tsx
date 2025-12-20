@@ -61,6 +61,7 @@ const EditAreaPage = () => {
           <Text style={{ alignSelf: 'center', color: 'white' }}>{"心形编辑器"}</Text>
         </TouchableOpacity>
       </View>
+      <View style={{ backgroundColor: "pink", width: 200, height: 30 }} />
       <View style={{ backgroundColor: 'cyan', width: 412, height: 412 }}>
         {
           editorSkiaType === 0 ?

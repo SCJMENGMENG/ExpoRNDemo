@@ -82,11 +82,22 @@ export default function EditorSkiaHeart() {
     return cy.value + dist * Math.sin(angle);
   });
 
+  // 超边界回到上一次的位置
+  // const lastValidX = useSharedValue(cx.value);
+  // const lastValidY = useSharedValue(cy.value);
+
+  const lastValidX = useSharedValue(180);
+  const lastValidY = useSharedValue(320);
+
   const panGesture = Gesture.Pan()
     .onBegin(e => {
       'worklet';
       const px = e.x;
       const py = e.y;
+
+      // 需回到上一次的位置x、y值
+      // lastValidX.value = cx.value;
+      // lastValidY.value = cy.value;
 
       // 缩放手柄
       const dxS = px - scaleHandleX.value;
@@ -156,6 +167,28 @@ export default function EditorSkiaHeart() {
     })
     .onFinalize(() => {
       'worklet';
+
+      // 拖动结束判断是否超出边界并回到设置的位置
+      const half = - size.value / 4;// -20
+
+      const out =
+        cx.value - half < 0 ||
+        cy.value - half < 0 ||
+        cx.value + half > 412 ||
+        cy.value + half > 412;
+
+      console.log('----scj--:', half, cx.value, cy.value);
+      console.log('-----sjc--1:', cx.value - half < 0);
+      console.log('-----sjc--2:', cy.value - half < 0);
+      console.log('-----sjc--3:', cx.value + half > 412);
+      console.log('-----sjc--4:', cy.value + half > 412);
+
+      if (out) {
+        cx.value = lastValidX.value;
+        cy.value = lastValidY.value;
+      }
+      // ⬆️
+
       isDragging.value = false;
       isScaling.value = false;
       isRotating.value = false;
