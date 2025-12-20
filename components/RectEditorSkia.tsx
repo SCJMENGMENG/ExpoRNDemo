@@ -1,11 +1,15 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Canvas, Path, Circle, Skia } from '@shopify/react-native-skia';
+import { Canvas, Path, Circle, Skia, Paint, DashPathEffect, Rect } from '@shopify/react-native-skia';
 import Animated, {
   useSharedValue,
   useDerivedValue,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+
+const cornerCubeW = 16;
+const cornerCubeHalfW = cornerCubeW / 2;
+const cornerCubeStrokeW = 5;
 
 type Corner = 'tl' | 'tr' | 'br' | 'bl' | null;
 
@@ -26,12 +30,6 @@ export default function RectEditorSkia() {
   const lastX = useSharedValue(0);
   const lastY = useSharedValue(0);
   const lastAngle = useSharedValue(0);
-
-  // 起始尺寸和中心点（用于角点调整大小时参考）
-  const startW = useSharedValue(0);
-  const startH = useSharedValue(0);
-  const startCenterX = useSharedValue(0);
-  const startCenterY = useSharedValue(0);
 
   // 矩形中心
   const center = useDerivedValue(() => ({
@@ -87,17 +85,17 @@ export default function RectEditorSkia() {
   });
 
   // 角点坐标拆分
-  const cornerTLX = useDerivedValue(() => corners.value.tl.x);
-  const cornerTLY = useDerivedValue(() => corners.value.tl.y);
+  const cornerTLX = useDerivedValue(() => corners.value.tl.x - cornerCubeHalfW);
+  const cornerTLY = useDerivedValue(() => corners.value.tl.y - cornerCubeHalfW);
 
-  const cornerTRX = useDerivedValue(() => corners.value.tr.x);
-  const cornerTRY = useDerivedValue(() => corners.value.tr.y);
+  const cornerTRX = useDerivedValue(() => corners.value.tr.x - cornerCubeHalfW);
+  const cornerTRY = useDerivedValue(() => corners.value.tr.y - cornerCubeHalfW);
 
-  const cornerBRX = useDerivedValue(() => corners.value.br.x);
-  const cornerBRY = useDerivedValue(() => corners.value.br.y);
+  const cornerBRX = useDerivedValue(() => corners.value.br.x - cornerCubeHalfW);
+  const cornerBRY = useDerivedValue(() => corners.value.br.y - cornerCubeHalfW);
 
-  const cornerBLX = useDerivedValue(() => corners.value.bl.x);
-  const cornerBLY = useDerivedValue(() => corners.value.bl.y);
+  const cornerBLX = useDerivedValue(() => corners.value.bl.x - cornerCubeHalfW);
+  const cornerBLY = useDerivedValue(() => corners.value.bl.y - cornerCubeHalfW);
 
   const anchorX = useSharedValue(0);
   const anchorY = useSharedValue(0);
@@ -231,13 +229,47 @@ export default function RectEditorSkia() {
           <Canvas style={StyleSheet.absoluteFill}>
             {/* 矩形 */}
             <Path path={path} color="rgba(33,150,243,0.3)" style="fill" />
-            <Path path={path} color="#2196F3" style="stroke" strokeWidth={2} />
+            <Path path={path} color="#2196F3" style="stroke" strokeWidth={2}>
+              <DashPathEffect intervals={[10, 5]} />
+            </Path>
 
             {/* 角点 */}
-            <Circle cx={cornerTLX} cy={cornerTLY} r={8} color="#4CAF50" />
-            <Circle cx={cornerTRX} cy={cornerTRY} r={8} color="#4CAF50" />
-            <Circle cx={cornerBRX} cy={cornerBRY} r={8} color="#4CAF50" />
-            <Circle cx={cornerBLX} cy={cornerBLY} r={8} color="#4CAF50" />
+            <Rect
+              x={cornerTLX}
+              y={cornerTLY}
+              width={cornerCubeW}
+              height={cornerCubeW}
+              color="#ffffff"
+            >
+              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+            </Rect>
+            <Rect
+              x={cornerTRX}
+              y={cornerTRY}
+              width={cornerCubeW}
+              height={cornerCubeW}
+              color="#ffffff"
+            >
+              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+            </Rect>
+            <Rect
+              x={cornerBRX}
+              y={cornerBRY}
+              width={cornerCubeW}
+              height={cornerCubeW}
+              color="#ffffff"
+            >
+              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+            </Rect>
+            <Rect
+              x={cornerBLX}
+              y={cornerBLY}
+              width={cornerCubeW}
+              height={cornerCubeW}
+              color="#ffffff"
+            >
+              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+            </Rect>
 
             {/* 旋转手柄 */}
             <Circle
