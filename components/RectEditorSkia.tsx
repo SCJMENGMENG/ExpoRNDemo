@@ -99,6 +99,8 @@ export default function RectEditorSkia() {
   const cornerBLX = useDerivedValue(() => corners.value.bl.x);
   const cornerBLY = useDerivedValue(() => corners.value.bl.y);
 
+  const anchorX = useSharedValue(0);
+  const anchorY = useSharedValue(0);
 
   const panGesture = Gesture.Pan()
     .onBegin(e => {
@@ -127,10 +129,17 @@ export default function RectEditorSkia() {
         const dy = py - corners.value[k].y;
         if (dx * dx + dy * dy <= r2) {
           activeCorner.value = k;
-          startW.value = w.value;
-          startH.value = h.value;
-          startCenterX.value = center.value.cx;
-          startCenterY.value = center.value.cy;
+
+          const opposite = {
+            tl: 'br',
+            tr: 'bl',
+            br: 'tl',
+            bl: 'tr',
+          }[k];
+
+          anchorX.value = corners.value[opposite as keyof typeof corners.value].x;
+          anchorY.value = corners.value[opposite as keyof typeof corners.value].y;
+
           return;
         }
       }
@@ -162,19 +171,41 @@ export default function RectEditorSkia() {
 
       // 角点调整大小
       if (activeCorner.value) {
-        const dx = e.x - startCenterX.value;
-        const dy = e.y - startCenterY.value;
+        // 世界坐标下：anchor → 手指
+        const dx = e.x - anchorX.value;
+        const dy = e.y - anchorY.value;
+
+        // 反向旋转，转到矩形本地坐标
         const cos = Math.cos(-rotation.value);
         const sin = Math.sin(-rotation.value);
         const lx = dx * cos - dy * sin;
         const ly = dx * sin + dy * cos;
 
-        w.value = Math.max(20, Math.abs(lx) * 2);
-        h.value = Math.max(20, Math.abs(ly) * 2);
-        x.value = startCenterX.value - w.value / 2;
-        y.value = startCenterY.value - h.value / 2;
+        // 新尺寸
+        const newW = Math.max(20, Math.abs(lx));
+        const newH = Math.max(20, Math.abs(ly));
+
+        w.value = newW;
+        h.value = newH;
+
+        // 新中心（anchor + 半尺寸，再旋回世界坐标）
+        const cxLocal = lx / 2;
+        const cyLocal = ly / 2;
+
+        const cosR = Math.cos(rotation.value);
+        const sinR = Math.sin(rotation.value);
+
+        const cxWorld =
+          anchorX.value + cxLocal * cosR - cyLocal * sinR;
+        const cyWorld =
+          anchorY.value + cxLocal * sinR + cyLocal * cosR;
+
+        x.value = cxWorld - newW / 2;
+        y.value = cyWorld - newH / 2;
+
         return;
       }
+
 
       // 平移
       if (isDragging.value) {
