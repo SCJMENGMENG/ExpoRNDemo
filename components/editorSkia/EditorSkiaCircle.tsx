@@ -21,6 +21,7 @@ const MIN_RADIUS = 30;
 export default function EditorSkiaCircle() {
   const rotateImg = useImage(require('@/assets/images/favicon.png'));
 
+  // 设置边界hook
   const bounds = useEditorBounds(412, 412);
 
   // 圆心 & 半径
@@ -82,6 +83,10 @@ export default function EditorSkiaCircle() {
         let nextR = startR.value + (dist - startDist.value);
         nextR = Math.max(MIN_RADIUS, nextR);
 
+        // 可出界
+        // r.value = nextR;
+
+        // 禁止出界
         const maxR = bounds.maxRadiusAt(cx.value, cy.value);
         r.value = Math.min(nextR, maxR);
         return;
@@ -94,6 +99,11 @@ export default function EditorSkiaCircle() {
         lastX.value = e.x;
         lastY.value = e.y;
 
+        // 可出界
+        // cx.value += dx;
+        // cy.value += dy;
+
+        // 禁止出界
         cx.value = bounds.clampX(cx.value + dx, r.value);
         cy.value = bounds.clampY(cy.value + dy, r.value);
       }
