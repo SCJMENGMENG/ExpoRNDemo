@@ -76,13 +76,13 @@ export default function TabTwoScreen() {
                 console.log('openDrawer')
             }} />
             <TouchableOpacity
-                style={{ height: 50, width: 100, backgroundColor: 'red', alignSelf: 'center', alignItems: 'center', justifyContent: 'center' }}
+                style={{ height: 50, width: 120, backgroundColor: 'red', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
                 onPress={() => {
                     closeDrawer();
                     router.push('/child/editAreaPage')
                 }}
             >
-                <Text>1111</Text>
+                <Text>Editor Skia组件</Text>
             </TouchableOpacity>
         </View>
     );
