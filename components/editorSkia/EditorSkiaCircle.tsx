@@ -13,12 +13,15 @@ import {
   useDerivedValue,
   useSharedValue,
 } from 'react-native-reanimated';
+import { useEditorBounds } from './useEditorBounds';
 
 const HANDLE_R = 24;
 const MIN_RADIUS = 30;
 
 export default function EditorSkiaCircle() {
   const rotateImg = useImage(require('@/assets/images/favicon.png'));
+
+  const bounds = useEditorBounds(412, 412);
 
   // 圆心 & 半径
   const cx = useSharedValue(180);
@@ -79,7 +82,8 @@ export default function EditorSkiaCircle() {
         let nextR = startR.value + (dist - startDist.value);
         nextR = Math.max(MIN_RADIUS, nextR);
 
-        r.value = nextR;
+        const maxR = bounds.maxRadiusAt(cx.value, cy.value);
+        r.value = Math.min(nextR, maxR);
         return;
       }
 
@@ -90,8 +94,8 @@ export default function EditorSkiaCircle() {
         lastX.value = e.x;
         lastY.value = e.y;
 
-        cx.value += dx;
-        cy.value += dy;
+        cx.value = bounds.clampX(cx.value + dx, r.value);
+        cy.value = bounds.clampY(cy.value + dy, r.value);
       }
     })
     .onFinalize(() => {
