@@ -19,7 +19,7 @@ const HANDLE_HALF = HANDLE / 2;
 
 type End = 'start' | 'end' | null;
 
-export default function LineEditorSkia() {
+export default function EditorSkiaLine() {
   /** ======================
    * 基础状态
    ====================== */

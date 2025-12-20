@@ -14,7 +14,7 @@ const cornerCubeStrokeW = 5;
 
 type Corner = 'tl' | 'tr' | 'br' | 'bl' | null;
 
-export default function RectEditorSkiaSquare() {
+export default function EditorSkiaSquare() {
   // 矩形参数
   const x = useSharedValue(100);
   const y = useSharedValue(200);

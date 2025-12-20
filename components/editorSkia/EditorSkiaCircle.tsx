@@ -1,21 +1,25 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import {
   Canvas,
   Circle,
   DashPathEffect,
   Paint,
+  Image as SkiaImage,
+  useImage,
 } from '@shopify/react-native-skia';
-import {
-  useSharedValue,
-  useDerivedValue,
-} from 'react-native-reanimated';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
 
-const HANDLE_R = 16;
+const HANDLE_R = 24;
 const MIN_RADIUS = 30;
 
-export default function CircleEditorSkia() {
+export default function EditorSkiaCircle() {
+  const rotateImg = useImage(require('@/assets/images/favicon.png'));
+
   // 圆心 & 半径
   const cx = useSharedValue(180);
   const cy = useSharedValue(300);
@@ -114,11 +118,13 @@ export default function CircleEditorSkia() {
             </Circle>
 
             {/* 缩放手柄 */}
-            <Circle
-              cx={handleX}
-              cy={handleY}
-              r={HANDLE_R}
-              color="#FF9800"
+            <SkiaImage
+              image={rotateImg}
+              x={handleX}
+              y={handleY}
+              width={HANDLE_R}
+              height={HANDLE_R}
+              fit="contain"
             />
           </Canvas>
         </View>

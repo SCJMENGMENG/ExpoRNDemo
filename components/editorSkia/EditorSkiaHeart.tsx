@@ -1,23 +1,27 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import {
   Canvas,
-  Path,
   Circle,
   DashPathEffect,
   Paint,
+  Path,
   Skia,
+  Image as SkiaImage,
+  useImage,
 } from '@shopify/react-native-skia';
-import {
-  useSharedValue,
-  useDerivedValue,
-} from 'react-native-reanimated';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 const HANDLE_R = 16;
 const MIN_SIZE = 40;
 
-export default function HeartEditorSkia() {
+export default function EditorSkiaHeart() {
+  const rotateImg = useImage(require('@/assets/images/favicon.png'));
+
   // 位置 & 变换
   const cx = useSharedValue(180);
   const cy = useSharedValue(320);
@@ -181,13 +185,23 @@ export default function HeartEditorSkia() {
               r={HANDLE_R}
               color="#FF9800"
             />
+            <SkiaImage
+              image={rotateImg}
+              x={rotateHandleX}
+              y={rotateHandleY}
+              width={24}
+              height={24}
+              fit="contain"
+            />
 
             {/* 旋转手柄 */}
-            <Circle
-              cx={rotateHandleX}
-              cy={rotateHandleY}
-              r={HANDLE_R}
-              color="#9C27B0"
+            <SkiaImage
+              image={rotateImg}
+              x={rotateHandleX}
+              y={rotateHandleY}
+              width={24}
+              height={24}
+              fit="contain"
             />
           </Canvas>
         </View>
