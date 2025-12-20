@@ -1,6 +1,8 @@
 import EditorSkiaCircle from '@/components/editorSkia/EditorSkiaCircle';
 import EditorSkiaHeart from '@/components/editorSkia/EditorSkiaHeart';
+import QuadEditorFull from '@/components/editorSkia/EditorSkiaIrregularSquareDrag';
 import EditorSkiaLine from '@/components/editorSkia/EditorSkiaLine';
+import QuadEditorNoSelfIntersect from '@/components/editorSkia/EditorSkiaNoIntersectSquare';
 import EditorSkiaSquare from '@/components/editorSkia/EditorSkiaSquare';
 import React, { useState } from 'react';
 import {
@@ -42,8 +44,6 @@ const EditAreaPage = () => {
         >
           <Text style={{ alignSelf: 'center', color: 'white' }}>{"线段编辑器"}</Text>
         </TouchableOpacity>
-      </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
         <TouchableOpacity
           style={{ marginTop: 20, alignSelf: 'center', width: 100, height: 30, backgroundColor: '#4CAF50', justifyContent: 'center', borderRadius: 5 }}
           onPress={() => {
@@ -52,10 +52,28 @@ const EditAreaPage = () => {
         >
           <Text style={{ alignSelf: 'center', color: 'white' }}>{"圆形编辑器"}</Text>
         </TouchableOpacity>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
         <TouchableOpacity
           style={{ marginTop: 20, alignSelf: 'center', width: 100, height: 30, backgroundColor: '#4CAF50', justifyContent: 'center', borderRadius: 5 }}
           onPress={() => {
             setEditorSkiaType(3);
+          }}
+        >
+          <Text style={{ alignSelf: 'center', color: 'white' }}>{"四边形编辑器"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginTop: 20, alignSelf: 'center', width: 100, height: 30, backgroundColor: '#4CAF50', justifyContent: 'center', borderRadius: 5 }}
+          onPress={() => {
+            setEditorSkiaType(4);
+          }}
+        >
+          <Text style={{ alignSelf: 'center', color: 'white' }}>{"四边形四边不相交编辑器"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginTop: 20, alignSelf: 'center', width: 100, height: 30, backgroundColor: '#4CAF50', justifyContent: 'center', borderRadius: 5 }}
+          onPress={() => {
+            setEditorSkiaType(5);
           }}
         >
           <Text style={{ alignSelf: 'center', color: 'white' }}>{"心形编辑器"}</Text>
@@ -73,7 +91,13 @@ const EditAreaPage = () => {
               editorSkiaType === 2 ?
                 <EditorSkiaCircle />
                 :
-                <EditorSkiaHeart />
+                editorSkiaType === 3 ?
+                  <QuadEditorFull />
+                  :
+                  editorSkiaType === 4 ?
+                    <QuadEditorNoSelfIntersect />
+                    :
+                    <EditorSkiaHeart />
         }
       </View>
     </View>
