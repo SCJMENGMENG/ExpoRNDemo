@@ -196,41 +196,39 @@ export default function EditorSkiaLine() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={pan}>
-        <View style={StyleSheet.absoluteFill}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            {/* 虚线 */}
-            <Path
-              path={path}
-              color="#2196F3"
-              style="stroke"
-              strokeWidth={2}
-            >
-              <DashPathEffect intervals={[10, 6]} />
-            </Path>
+        <Canvas style={StyleSheet.absoluteFill}>
+          {/* 虚线 */}
+          <Path
+            path={path}
+            color="#2196F3"
+            style="stroke"
+            strokeWidth={2}
+          >
+            <DashPathEffect intervals={[10, 6]} />
+          </Path>
 
-            {/* 起点 */}
-            <Rect
-              x={useDerivedValue(() => start.value.x - HANDLE_HALF)}
-              y={useDerivedValue(() => start.value.y - HANDLE_HALF)}
-              width={HANDLE}
-              height={HANDLE}
-              color="#fff"
-            >
-              <Paint color="#4CAF50" style="stroke" strokeWidth={4} />
-            </Rect>
+          {/* 起点 */}
+          <Rect
+            x={useDerivedValue(() => start.value.x - HANDLE_HALF)}
+            y={useDerivedValue(() => start.value.y - HANDLE_HALF)}
+            width={HANDLE}
+            height={HANDLE}
+            color="#fff"
+          >
+            <Paint color="#4CAF50" style="stroke" strokeWidth={4} />
+          </Rect>
 
-            {/* 终点 */}
-            <Rect
-              x={useDerivedValue(() => end.value.x - HANDLE_HALF)}
-              y={useDerivedValue(() => end.value.y - HANDLE_HALF)}
-              width={HANDLE}
-              height={HANDLE}
-              color="#fff"
-            >
-              <Paint color="#4CAF50" style="stroke" strokeWidth={4} />
-            </Rect>
-          </Canvas>
-        </View>
+          {/* 终点 */}
+          <Rect
+            x={useDerivedValue(() => end.value.x - HANDLE_HALF)}
+            y={useDerivedValue(() => end.value.y - HANDLE_HALF)}
+            width={HANDLE}
+            height={HANDLE}
+            color="#fff"
+          >
+            <Paint color="#4CAF50" style="stroke" strokeWidth={4} />
+          </Rect>
+        </Canvas>
       </GestureDetector>
     </View>
   );

@@ -196,43 +196,41 @@ export default function QuadEditorFull() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={panGesture}>
-        <View style={StyleSheet.absoluteFill}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            {/* 填充 */}
-            <Path path={quadPath} color="rgba(33,150,243,0.25)" />
+        <Canvas style={StyleSheet.absoluteFill}>
+          {/* 填充 */}
+          <Path path={quadPath} color="rgba(33,150,243,0.25)" />
 
-            {/* 边框 */}
-            <Path path={quadPath} style="stroke" strokeWidth={2} color="#2196F3">
-              <DashPathEffect intervals={[8, 4]} />
-            </Path>
+          {/* 边框 */}
+          <Path path={quadPath} style="stroke" strokeWidth={2} color="#2196F3">
+            <DashPathEffect intervals={[8, 4]} />
+          </Path>
 
-            {/* 角点 */}
-            {points.map((p, i) => (
-              <Rect
-                key={i}
-                x={cornerX[i]}
-                y={cornerY[i]}
-                width={HANDLE}
-                height={HANDLE}
-                color="#fff"
-              >
-                <Paint
-                  style="stroke"
-                  strokeWidth={3}
-                  color="#4CAF50"
-                />
-              </Rect>
-            ))}
+          {/* 角点 */}
+          {points.map((p, i) => (
+            <Rect
+              key={i}
+              x={cornerX[i]}
+              y={cornerY[i]}
+              width={HANDLE}
+              height={HANDLE}
+              color="#fff"
+            >
+              <Paint
+                style="stroke"
+                strokeWidth={3}
+                color="#4CAF50"
+              />
+            </Rect>
+          ))}
 
-            {/* 旋转手柄 */}
-            <Circle
-              cx={rotateHandleX}
-              cy={rotateHandleY}
-              r={ROTATE_R / 2}
-              color="#FF9800"
-            />
-          </Canvas>
-        </View>
+          {/* 旋转手柄 */}
+          <Circle
+            cx={rotateHandleX}
+            cy={rotateHandleY}
+            r={ROTATE_R / 2}
+            color="#FF9800"
+          />
+        </Canvas>
       </GestureDetector>
     </View>
   );

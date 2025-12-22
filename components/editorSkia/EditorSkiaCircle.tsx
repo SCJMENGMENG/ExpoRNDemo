@@ -117,31 +117,29 @@ export default function EditorSkiaCircle() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={panGesture}>
-        <View style={StyleSheet.absoluteFill}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            {/* 圆形虚线边框 */}
-            <Circle cx={cx} cy={cy} r={r} color="#2196F3">
-              {/* 边框 */}
-              <Paint
-                style="stroke"
-                strokeWidth={2}
-                color="#E91E63"
-              >
-                <DashPathEffect intervals={[8, 6]} />
-              </Paint>
-            </Circle>
+        <Canvas style={StyleSheet.absoluteFill}>
+          {/* 圆形虚线边框 */}
+          <Circle cx={cx} cy={cy} r={r} color="#2196F3">
+            {/* 边框 */}
+            <Paint
+              style="stroke"
+              strokeWidth={2}
+              color="#E91E63"
+            >
+              <DashPathEffect intervals={[8, 6]} />
+            </Paint>
+          </Circle>
 
-            {/* 缩放手柄 */}
-            <SkiaImage
-              image={rotateImg}
-              x={handleX}
-              y={handleY}
-              width={HANDLE_R}
-              height={HANDLE_R}
-              fit="contain"
-            />
-          </Canvas>
-        </View>
+          {/* 缩放手柄 */}
+          <SkiaImage
+            image={rotateImg}
+            x={handleX}
+            y={handleY}
+            width={HANDLE_R}
+            height={HANDLE_R}
+            fit="contain"
+          />
+        </Canvas>
       </GestureDetector>
     </View>
   );

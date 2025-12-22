@@ -226,61 +226,59 @@ export default function EditorSkiaSquare() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={panGesture}>
-        <View style={StyleSheet.absoluteFill}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            {/* 矩形 */}
-            <Path path={path} color="rgba(33,150,243,0.3)" style="fill" />
-            <Path path={path} color="#2196F3" style="stroke" strokeWidth={2}>
-              <DashPathEffect intervals={[10, 5]} />
-            </Path>
+        <Canvas style={StyleSheet.absoluteFill}>
+          {/* 矩形 */}
+          <Path path={path} color="rgba(33,150,243,0.3)" style="fill" />
+          <Path path={path} color="#2196F3" style="stroke" strokeWidth={2}>
+            <DashPathEffect intervals={[10, 5]} />
+          </Path>
 
-            {/* 角点 */}
-            <Rect
-              x={cornerTLX}
-              y={cornerTLY}
-              width={cornerCubeW}
-              height={cornerCubeW}
-              color="#ffffff"
-            >
-              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
-            </Rect>
-            <Rect
-              x={cornerTRX}
-              y={cornerTRY}
-              width={cornerCubeW}
-              height={cornerCubeW}
-              color="#ffffff"
-            >
-              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
-            </Rect>
-            <Rect
-              x={cornerBRX}
-              y={cornerBRY}
-              width={cornerCubeW}
-              height={cornerCubeW}
-              color="#ffffff"
-            >
-              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
-            </Rect>
-            <Rect
-              x={cornerBLX}
-              y={cornerBLY}
-              width={cornerCubeW}
-              height={cornerCubeW}
-              color="#ffffff"
-            >
-              <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
-            </Rect>
+          {/* 角点 */}
+          <Rect
+            x={cornerTLX}
+            y={cornerTLY}
+            width={cornerCubeW}
+            height={cornerCubeW}
+            color="#ffffff"
+          >
+            <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+          </Rect>
+          <Rect
+            x={cornerTRX}
+            y={cornerTRY}
+            width={cornerCubeW}
+            height={cornerCubeW}
+            color="#ffffff"
+          >
+            <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+          </Rect>
+          <Rect
+            x={cornerBRX}
+            y={cornerBRY}
+            width={cornerCubeW}
+            height={cornerCubeW}
+            color="#ffffff"
+          >
+            <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+          </Rect>
+          <Rect
+            x={cornerBLX}
+            y={cornerBLY}
+            width={cornerCubeW}
+            height={cornerCubeW}
+            color="#ffffff"
+          >
+            <Paint color="#4CAF50" style="stroke" strokeWidth={cornerCubeStrokeW} />
+          </Rect>
 
-            {/* 旋转手柄 */}
-            <Circle
-              cx={rotateHandleX}
-              cy={rotateHandleY}
-              r={circleW/2}
-              color="#FF9800"
-            />
-          </Canvas>
-        </View>
+          {/* 旋转手柄 */}
+          <Circle
+            cx={rotateHandleX}
+            cy={rotateHandleY}
+            r={circleW / 2}
+            color="#FF9800"
+          />
+        </Canvas>
       </GestureDetector>
     </View>
   );

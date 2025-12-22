@@ -197,47 +197,45 @@ export default function EditorSkiaHeart() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={panGesture}>
-        <View style={StyleSheet.absoluteFill}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            {/* 心形虚线 */}
-            <Path path={heartPath} color="rgba(233, 30, 99, 1)" style="fill">
-              {/* 边框 */}
-              <Paint
-                style="stroke"
-                strokeWidth={2}
-                color="#2196F3"
-              >
-                <DashPathEffect intervals={[8, 6]} />
-              </Paint>
-            </Path>
+        <Canvas style={StyleSheet.absoluteFill}>
+          {/* 心形虚线 */}
+          <Path path={heartPath} color="rgba(233, 30, 99, 1)" style="fill">
+            {/* 边框 */}
+            <Paint
+              style="stroke"
+              strokeWidth={2}
+              color="#2196F3"
+            >
+              <DashPathEffect intervals={[8, 6]} />
+            </Paint>
+          </Path>
 
-            {/* 缩放手柄 */}
-            <Circle
-              cx={scaleHandleX}
-              cy={scaleHandleY}
-              r={HANDLE_R}
-              color="#FF9800"
-            />
-            <SkiaImage
-              image={rotateImg}
-              x={rotateHandleX}
-              y={rotateHandleY}
-              width={24}
-              height={24}
-              fit="contain"
-            />
+          {/* 缩放手柄 */}
+          <Circle
+            cx={scaleHandleX}
+            cy={scaleHandleY}
+            r={HANDLE_R}
+            color="#FF9800"
+          />
+          <SkiaImage
+            image={rotateImg}
+            x={rotateHandleX}
+            y={rotateHandleY}
+            width={24}
+            height={24}
+            fit="contain"
+          />
 
-            {/* 旋转手柄 */}
-            <SkiaImage
-              image={rotateImg}
-              x={rotateHandleX}
-              y={rotateHandleY}
-              width={24}
-              height={24}
-              fit="contain"
-            />
-          </Canvas>
-        </View>
+          {/* 旋转手柄 */}
+          <SkiaImage
+            image={rotateImg}
+            x={rotateHandleX}
+            y={rotateHandleY}
+            width={24}
+            height={24}
+            fit="contain"
+          />
+        </Canvas>
       </GestureDetector>
     </View>
   );

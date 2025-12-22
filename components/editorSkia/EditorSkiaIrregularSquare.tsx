@@ -83,35 +83,33 @@ export default function QuadEditor() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={panGesture}>
-        <View style={StyleSheet.absoluteFill}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            {/* 填充 */}
-            <Path path={quadPath} color="rgba(33,150,243,0.25)" />
+        <Canvas style={StyleSheet.absoluteFill}>
+          {/* 填充 */}
+          <Path path={quadPath} color="rgba(33,150,243,0.25)" />
 
-            {/* 边框 */}
-            <Path path={quadPath} style="stroke" color="#2196F3" strokeWidth={2}>
-              <DashPathEffect intervals={[8, 4]} />
-            </Path>
+          {/* 边框 */}
+          <Path path={quadPath} style="stroke" color="#2196F3" strokeWidth={2}>
+            <DashPathEffect intervals={[8, 4]} />
+          </Path>
 
-            {/* 四个角点 */}
-            {[h0, h1, h2, h3].map((h, i) => (
-              <Rect
-                key={i}
-                x={h.x}
-                y={h.y}
-                width={HANDLE_SIZE}
-                height={HANDLE_SIZE}
-                color="#fff"
-              >
-                <Paint
-                  style="stroke"
-                  strokeWidth={HANDLE_STROKE}
-                  color="#4CAF50"
-                />
-              </Rect>
-            ))}
-          </Canvas>
-        </View>
+          {/* 四个角点 */}
+          {[h0, h1, h2, h3].map((h, i) => (
+            <Rect
+              key={i}
+              x={h.x}
+              y={h.y}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              color="#fff"
+            >
+              <Paint
+                style="stroke"
+                strokeWidth={HANDLE_STROKE}
+                color="#4CAF50"
+              />
+            </Rect>
+          ))}
+        </Canvas>
       </GestureDetector>
     </View>
   );
