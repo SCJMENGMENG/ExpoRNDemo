@@ -8,14 +8,17 @@ import {
   Skia,
 } from '@shopify/react-native-skia';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useDerivedValue, useSharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated';
 
 const HANDLE = 16;
 const HANDLE_HALF = HANDLE / 2;
 const ROTATE_R = 16;
 const ROTATE_OFFSET = 40;
+
+const BTN_SIZE = 28;
+const BTN_OFFSET_Y = 20;
 
 type Corner = 0 | 1 | 2 | 3 | null;
 
@@ -219,6 +222,33 @@ export default function QuadEditorNoSelfIntersect() {
       isRotating.value = false;
     });
 
+  const cancelBtnStyle = useAnimatedStyle(() => {
+    const p = points[3].value; // 左下角
+    // console.log('----scj----confirmBtnStyle:', p, p.x - BTN_SIZE / 2, p.y + BTN_OFFSET_Y);
+    return {
+      position: 'absolute',
+      left: p.x - BTN_SIZE / 2,
+      top: p.y + BTN_OFFSET_Y,
+    };
+  });
+  const confirmBtnStyle = useAnimatedStyle(() => {
+    const p = points[2].value; // 右下角
+    // console.log('----scj----confirmBtnStyle:', p, p.x - BTN_SIZE / 2, p.y + BTN_OFFSET_Y);
+    return {
+      position: 'absolute',
+      left: p.x - BTN_SIZE / 2,
+      top: p.y + BTN_OFFSET_Y,
+    };
+  });
+
+  const onCancel = () => {
+    console.log('取消四边形坐标');
+  };
+  const onConfirm = () => {
+    const result = points.map(p => p.value);
+    console.log('四边形坐标:', result);
+  };
+
   return (
     <View style={StyleSheet.absoluteFill}>
       <GestureDetector gesture={panGesture}>
@@ -254,6 +284,26 @@ export default function QuadEditorNoSelfIntersect() {
           />
         </Canvas>
       </GestureDetector>
+
+      {/* ✅ 左下角取消按钮 */}
+      <Animated.View style={cancelBtnStyle}>
+        <Pressable onPress={onCancel}>
+          <Image
+            source={require('@/assets/images/favicon.png')}
+            style={{ width: BTN_SIZE, height: BTN_SIZE }}
+          />
+        </Pressable>
+      </Animated.View>
+
+      {/* ✅ 右下角确认按钮 */}
+      <Animated.View style={confirmBtnStyle}>
+        <Pressable onPress={onConfirm}>
+          <Image
+            source={require('@/assets/images/favicon.png')}
+            style={{ width: BTN_SIZE, height: BTN_SIZE }}
+          />
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
