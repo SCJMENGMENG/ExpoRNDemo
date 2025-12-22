@@ -95,6 +95,27 @@ export default function QuadEditorNoSelfIntersect() {
     );
   };
 
+
+
+  /** 点是否在四边形内（射线法） */
+  const hitQuad = (x: number, y: number) => {
+    'worklet';
+    const pts = points.map(p => p.value);
+    let inside = false;
+    for (let i = 0, j = 3; i < 4; j = i++) {
+      const xi = pts[i].x,
+        yi = pts[i].y;
+      const xj = pts[j].x,
+        yj = pts[j].y;
+
+      const intersect =
+        yi > y !== yj > y &&
+        x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  };
+
   /* ---------- 手势 ---------- */
 
   const panGesture = Gesture.Pan()
@@ -123,10 +144,12 @@ export default function QuadEditorNoSelfIntersect() {
         }
       }
 
-      // 内部拖动
-      isDragging.value = true;
-      lastX.value = e.x;
-      lastY.value = e.y;
+      // 3️⃣ 内部拖动
+      if (hitQuad(e.x, e.y)) {
+        isDragging.value = true;
+        lastX.value = e.x;
+        lastY.value = e.y;
+      }
     })
     .onUpdate(e => {
       'worklet';
@@ -224,7 +247,7 @@ export default function QuadEditorNoSelfIntersect() {
 
   const cancelBtnStyle = useAnimatedStyle(() => {
     const p = points[3].value; // 左下角
-    // console.log('----scj----confirmBtnStyle:', p, p.x - BTN_SIZE / 2, p.y + BTN_OFFSET_Y);
+    // console.log('----cancelBtnStyle:', p, p.x - BTN_SIZE / 2, p.y + BTN_OFFSET_Y);
     return {
       position: 'absolute',
       left: p.x - BTN_SIZE / 2,
@@ -233,7 +256,7 @@ export default function QuadEditorNoSelfIntersect() {
   });
   const confirmBtnStyle = useAnimatedStyle(() => {
     const p = points[2].value; // 右下角
-    // console.log('----scj----confirmBtnStyle:', p, p.x - BTN_SIZE / 2, p.y + BTN_OFFSET_Y);
+    // console.log('----confirmBtnStyle:', p, p.x - BTN_SIZE / 2, p.y + BTN_OFFSET_Y);
     return {
       position: 'absolute',
       left: p.x - BTN_SIZE / 2,
