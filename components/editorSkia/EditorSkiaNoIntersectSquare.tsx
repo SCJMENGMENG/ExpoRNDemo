@@ -142,13 +142,25 @@ export default function QuadEditorNoSelfIntersect() {
         const cos = Math.cos(delta);
         const sin = Math.sin(delta);
 
-        for (const p of points) {
+        // for (const p of points) {
+        //   const dx = p.value.x - cx;
+        //   const dy = p.value.y - cy;
+        //   p.value = {
+        //     x: cx + dx * cos - dy * sin,
+        //     y: cy + dx * sin + dy * cos,
+        //   };
+        // }
+        const rotated = points.map(p => {
           const dx = p.value.x - cx;
           const dy = p.value.y - cy;
-          p.value = {
+          return {
             x: cx + dx * cos - dy * sin,
             y: cy + dx * sin + dy * cos,
           };
+        });
+
+        for (let i = 0; i < 4; i++) {
+          points[i].value = rotated[i];
         }
         return;
       }
@@ -158,8 +170,17 @@ export default function QuadEditorNoSelfIntersect() {
         const idx = activeCorner.value;
         const prev = points[idx].value;
 
-        const next = { x: e.x, y: e.y };
-        points[idx].value = next;
+        // const next = { x: e.x, y: e.y };
+        // points[idx].value = next;
+
+        const nextPoints = points.map(p => ({ ...p.value }));
+        nextPoints[idx] = { x: e.x, y: e.y };
+
+        if (!isSelfIntersecting(nextPoints)) {
+          for (let i = 0; i < 4; i++) {
+            points[i].value = nextPoints[i];
+          }
+        }
 
         const snapshot = points.map(p => p.value);
         if (isSelfIntersecting(snapshot)) {
