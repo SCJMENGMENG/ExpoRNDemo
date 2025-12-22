@@ -142,14 +142,6 @@ export default function QuadEditorNoSelfIntersect() {
         const cos = Math.cos(delta);
         const sin = Math.sin(delta);
 
-        // for (const p of points) {
-        //   const dx = p.value.x - cx;
-        //   const dy = p.value.y - cy;
-        //   p.value = {
-        //     x: cx + dx * cos - dy * sin,
-        //     y: cy + dx * sin + dy * cos,
-        //   };
-        // }
         const rotated = points.map(p => {
           const dx = p.value.x - cx;
           const dy = p.value.y - cy;
@@ -165,29 +157,45 @@ export default function QuadEditorNoSelfIntersect() {
         return;
       }
 
-      /** 拖动角点（防自交） */
+      /** 方式一：拖动角点（防自交）
+       * 单点提交 适合：角点拖拽
+       * 1.只拖一个角点 
+       * 2.逻辑直观：假设这个角点挪过去 → 看看会不会自交 → 不会就真的挪
+       * 3.更高效
+       * 4.snapshot 是 纯 JS 数据，isSelfIntersecting(snapshot) 是 纯几何判断
+       * 5.无回退、无一帧内多次写同一个 SharedValue、无读写混用
+       * */
       if (activeCorner.value !== null) {
         const idx = activeCorner.value;
-        const prev = points[idx].value;
+        const candidate = { x: e.x, y: e.y };
 
-        // const next = { x: e.x, y: e.y };
-        // points[idx].value = next;
+        const snapshot = points.map((p, i) =>
+          i === idx ? candidate : p.value
+        );
 
-        const nextPoints = points.map(p => ({ ...p.value }));
-        nextPoints[idx] = { x: e.x, y: e.y };
-
-        if (!isSelfIntersecting(nextPoints)) {
-          for (let i = 0; i < 4; i++) {
-            points[i].value = nextPoints[i];
-          }
-        }
-
-        const snapshot = points.map(p => p.value);
-        if (isSelfIntersecting(snapshot)) {
-          points[idx].value = prev; // 回退
+        if (!isSelfIntersecting(snapshot)) {
+          points[idx].value = candidate;
         }
         return;
       }
+      /** 方式二：拖动角点（防自交） 
+       * 整组提交 适合：旋转 / 平移 / resize
+       * 1.拖一个点，会联动改变其他点（等比缩放、拖角 + 对边跟随）
+       * 2.旋转、整体平移、自动修正形状（例如强制凸多边形）
+       * */
+      // if (activeCorner.value !== null) {
+      //   const idx = activeCorner.value;
+
+      //   const nextPoints = points.map(p => ({ ...p.value }));
+      //   nextPoints[idx] = { x: e.x, y: e.y };
+
+      //   if (!isSelfIntersecting(nextPoints)) {
+      //     for (let i = 0; i < 4; i++) {
+      //       points[i].value = nextPoints[i];
+      //     }
+      //   }
+      //   return;
+      // }
 
       /** 整体平移 */
       if (isDragging.value) {
