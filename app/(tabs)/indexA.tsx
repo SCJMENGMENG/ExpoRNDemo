@@ -3,8 +3,13 @@ import React from 'react';
 import {
   AppState,
   Button,
+  Dimensions,
+  Modal,
   ScrollView,
-  StyleSheet, Text, TouchableOpacity, View
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
@@ -14,6 +19,10 @@ import { useEffect, useRef, useState } from 'react';
 import BleManager, { Peripheral } from 'react-native-ble-manager';
 import DeviceInfo from 'react-native-device-info';
 
+import Toast from 'react-native-root-toast';
+// import Toast from 'react-native-root-toast';
+// import { Toast } from 'toastify-react-native';
+
 const SECONDS_TO_SCAN_FOR = 10;
 const SERVICE_UUIDS: string[] = ["280f"];
 
@@ -21,6 +30,7 @@ const encoder = new TextEncoder();
 const SERVICE_UUID = `12345678-1234-5678-1234-56789abcdef0`;
 const CHAR_OUTBOX = `12345678-1234-5678-1234-56789abcdef1`;
 
+const [width, height] = [Dimensions.get('window').width, Dimensions.get('window').height];
 function HomeScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
@@ -34,6 +44,8 @@ function HomeScreen() {
   const [connectedPeripheral, setConnectedPeripheral] = useState<string | null>(null); // 当前连接的设备
   const heartbeatId = useRef<number | null>(null); // 心跳定时器引用
   const router = useRouter();
+
+  const [visible, setVisible] = useState(false);
 
   // MARK:蓝牙写入数据函数
   const writeWithoutResponse = async (peripheralId: string, base64str: string) => {
@@ -462,6 +474,70 @@ function HomeScreen() {
             </>
           )}
         </View>
+        <TouchableOpacity
+          onPress={() => {
+            // setVisible(true);
+
+            // Toast.show(
+            //   <View style={{ backgroundColor: 'red', width: 100, height: 100 }}>
+            //     <Text>Toast</Text>
+            //   </View>,
+            //   {
+            //     duration: Toast.durations.LONG,
+            //     position: Toast.positions.CENTER,
+            //     shadow: true,
+            //     animation: true,
+            //     hideOnPress: true,
+            //     delay: 0,
+            //     containerStyle: {
+            //       justifyContent: 'center',
+            //       alignItems: 'center',
+            //       width: width,
+            //       height: height,
+            //       marginTop: -10
+            //     },
+            //     onShow: () => {
+            //       // calls on toast\`s appear animation start
+            //     },
+            //     onShown: () => {
+            //       // calls on toast\`s appear animation end.
+            //     },
+            //     onHide: () => {
+            //       // calls on toast\`s hide animation start.
+            //     },
+            //     onHidden: () => {
+            //       // calls on toast\`s hide animation end.
+            //     }
+            //   });
+
+            // Toast.success('Success message!', 'center')
+            // Toast.show({
+            //   type: 'success',//'custom',
+            //   text1: 'Custom Success',
+            //   text2: 'Using the custom success component',
+            //   position: 'center',
+            //   onPress: () => {
+            //     console.log('Toast pressed')
+            //   }
+            // })
+            // setTimeout(() => {
+            //   // Toast.success('123123123123!', 'center')
+            //   Toast.show({
+            //     type: 'customSuccess',//'custom',
+            //     text1: '111221221212',
+            //     text2: 'U32322323',
+            //     position: 'center',
+            //   })
+            // }, 2000);
+            // setTimeout(() => {
+            //   Toast.show({
+            //     type: 'customSuccess', text1: 'asdfasdfasdfasdf!', position: 'center', onPress: () => console.log('Toast pressed'),
+            //   })
+            // }, 5000);
+          }}
+        >
+          <Text>Toast Click</Text>
+        </TouchableOpacity>
       </ScrollView>
       {/* 显示连接状态 */}
       <View style={styles.statusContainer}>
@@ -477,6 +553,46 @@ function HomeScreen() {
           应用状态: {appState}
         </Text>
       </View>
+
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => { }} // Android返回键不做任何操作
+        statusBarTranslucent={true}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <TouchableOpacity
+            style={{ backgroundColor: 'white', width: 100, height: 100 }}
+            onPress={() => {
+              setVisible(false);
+              // Toast.success('Success message!', 'center')
+
+              // Toast.show(
+              //   <View style={{ backgroundColor: 'red', width: 100, height: 100 }}>
+              //     <Text>Toast</Text>
+              //   </View>,
+              //   {
+              //     duration: 3000,
+              //     position: Toast.positions.BOTTOM,
+              //     backgroundColor: 'rgba(0,0,0,0.3)',
+              //     opacity: 1,
+              //     hideOnPress: false,
+              //     containerStyle: {
+              //       justifyContent: 'center',
+              //       alignItems: 'center',
+              //       width: width,
+              //       height: height,
+              //       marginTop: -10
+              //     },
+              //   }
+              // );
+            }}
+          >
+            <Text>点我啊</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </>
   );
 }
