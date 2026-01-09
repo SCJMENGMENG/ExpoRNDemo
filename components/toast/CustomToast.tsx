@@ -1,7 +1,7 @@
 // CustomToast.tsx
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 export enum ToastType {
   success = 'success',
@@ -33,10 +33,8 @@ const CustomToast = ({ type, text1, text2 }: { type: ToastType, text1: string, t
 const SquareToast = ({
   type,
   text1,
-}: {
-  type: ToastType,
-  text1: string
-}) => {
+  ...props
+}: any) => {
   const { width: width, height: height } = useWindowDimensions();
   let iconName: React.ComponentProps<typeof MaterialIcons>['name'] = "info";
   let iconColor = "#7CC7F9";
@@ -47,13 +45,14 @@ const SquareToast = ({
     iconName = "error";
     iconColor = "#FE5801";
   }
+  const close = props?.onClose || props?.closeToast || props?.hide || props?.onPress;
 
   return (
     <View style={{ width: width, height: height, alignItems: 'center', justifyContent: 'center' }}>
-      <View style={squareStyles.squareBox}>
+      <Pressable onPress={() => close?.()} style={squareStyles.squareBox}>
         <MaterialIcons name={iconName} size={40} color={iconColor} style={{ marginBottom: 16 }} />
         <Text style={squareStyles.squareText}>{text1}</Text>
-      </View>
+      </Pressable>
     </View>
   );
 };
@@ -62,15 +61,13 @@ const ModalToast = ({
   type,
   text1,
   text2,
-}: {
-  type: ToastType,
-  text1: string,
-  text2: string,
-}) => {
+  ...props
+}: any) => {
   const { width: width, height: height } = useWindowDimensions();
+  const close = props?.onClose || props?.closeToast || props?.hide || props?.onPress;
 
   return (
-    <View style={[{
+    <Pressable onPress={() => close?.()} style={[{
       width: '100%',
       height: '100%',
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -112,7 +109,7 @@ const ModalToast = ({
           </Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   )
 }
 
