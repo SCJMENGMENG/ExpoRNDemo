@@ -12,14 +12,15 @@ import {
   View
 } from 'react-native';
 
+import ToastControl from '@/components/toast/ToastControl';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useEffect, useRef, useState } from 'react';
 import BleManager, { Peripheral } from 'react-native-ble-manager';
 import DeviceInfo from 'react-native-device-info';
+import { Toast } from 'toastify-react-native';
 
-import Toast from 'react-native-root-toast';
 // import Toast from 'react-native-root-toast';
 // import { Toast } from 'toastify-react-native';
 
@@ -475,68 +476,23 @@ function HomeScreen() {
           )}
         </View>
         <TouchableOpacity
+          style={[styles.button, { marginBottom: 10, marginRight: 20 }]}
           onPress={() => {
-            // setVisible(true);
-
-            // Toast.show(
-            //   <View style={{ backgroundColor: 'red', width: 100, height: 100 }}>
-            //     <Text>Toast</Text>
-            //   </View>,
-            //   {
-            //     duration: Toast.durations.LONG,
-            //     position: Toast.positions.CENTER,
-            //     shadow: true,
-            //     animation: true,
-            //     hideOnPress: true,
-            //     delay: 0,
-            //     containerStyle: {
-            //       justifyContent: 'center',
-            //       alignItems: 'center',
-            //       width: width,
-            //       height: height,
-            //       marginTop: -10
-            //     },
-            //     onShow: () => {
-            //       // calls on toast\`s appear animation start
-            //     },
-            //     onShown: () => {
-            //       // calls on toast\`s appear animation end.
-            //     },
-            //     onHide: () => {
-            //       // calls on toast\`s hide animation start.
-            //     },
-            //     onHidden: () => {
-            //       // calls on toast\`s hide animation end.
-            //     }
-            //   });
-
-            // Toast.success('Success message!', 'center')
-            // Toast.show({
-            //   type: 'success',//'custom',
-            //   text1: 'Custom Success',
-            //   text2: 'Using the custom success component',
-            //   position: 'center',
-            //   onPress: () => {
-            //     console.log('Toast pressed')
-            //   }
-            // })
-            // setTimeout(() => {
-            //   // Toast.success('123123123123!', 'center')
-            //   Toast.show({
-            //     type: 'customSuccess',//'custom',
-            //     text1: '111221221212',
-            //     text2: 'U32322323',
-            //     position: 'center',
-            //   })
-            // }, 2000);
-            // setTimeout(() => {
-            //   Toast.show({
-            //     type: 'customSuccess', text1: 'asdfasdfasdfasdf!', position: 'center', onPress: () => console.log('Toast pressed'),
-            //   })
-            // }, 5000);
+            setVisible(true);
           }}
         >
-          <Text>Toast Click</Text>
+          <Text>Click Show Modal</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, { marginBottom: 10, marginRight: 20 }]}
+          onPress={() => {
+            Toast.show({
+              type: 'error',
+              text1: '错误的操作',
+            })
+          }}
+        >
+          <Text>Click Show Toast</Text>
         </TouchableOpacity>
       </ScrollView>
       {/* 显示连接状态 */}
@@ -563,7 +519,7 @@ function HomeScreen() {
       >
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <TouchableOpacity
-            style={{ backgroundColor: 'white', width: 100, height: 100 }}
+            style={{ backgroundColor: 'white', width: 200, height: 50, marginBottom: 10, justifyContent: 'center', alignItems: 'center', borderRadius: 10 }}
             onPress={() => {
               setVisible(false);
               // Toast.success('Success message!', 'center')
@@ -589,9 +545,21 @@ function HomeScreen() {
               // );
             }}
           >
-            <Text>点我啊</Text>
+            <Text>点我去除modal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ backgroundColor: 'white', width: 200, height: 50, marginBottom: 10, justifyContent: 'center', alignItems: 'center', borderRadius: 10 }}
+            onPress={() => {
+              Toast.show({
+                type: 'error',
+                text1: '错误的操作2',
+              })
+            }}
+          >
+            <Text>点我弹toast</Text>
           </TouchableOpacity>
         </View>
+        <ToastControl />
       </Modal>
     </>
   );
