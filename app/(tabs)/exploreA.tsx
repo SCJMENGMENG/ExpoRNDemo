@@ -92,6 +92,14 @@ export default function TabTwoScreen() {
             >
                 <Text>Skia绘制地图</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+                style={{ height: 50, width: 120, backgroundColor: 'red', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginTop: 10 }}
+                onPress={() => {
+                    router.push('/child/skiaDrawOnlyPinch')
+                }}
+            >
+                <Text>Skia Only缩放</Text>
+            </TouchableOpacity>
         </View>
     );
 }
