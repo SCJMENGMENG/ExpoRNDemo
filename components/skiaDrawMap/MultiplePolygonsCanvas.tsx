@@ -14,7 +14,6 @@ export type ZoneData = {
   hashId: string;
   name: string;
   points: Point[];
-  latLngPoints: PointArr[];
 };
 
 interface MultiplePolygonsCanvasProps {
