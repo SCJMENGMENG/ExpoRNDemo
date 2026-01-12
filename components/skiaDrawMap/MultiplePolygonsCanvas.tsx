@@ -152,10 +152,10 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
             <Image
               image={image}
               fit="cover"
-              width={width * 1.2}
-              height={viewH * 1.2}
-              x={-width / 12}
-              y={-viewH / 12}
+              width={width}
+              height={viewH}
+              x={-width / 10}
+              y={-viewH / 10}
             />
           </Group>
         </Group>
