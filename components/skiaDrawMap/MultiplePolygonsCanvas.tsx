@@ -1,9 +1,21 @@
 // src/components/MapPreviewCanvas.tsx
+import { Canvas, Group, Image, Path, Skia, useImage } from '@shopify/react-native-skia';
 import React, { useMemo } from 'react';
-import { Canvas, Group, Image, useImage, Skia, Path, Paint } from '@shopify/react-native-skia';
-import { Icons } from '@/src/components/ui/Icons/Icons';
-import { ZoneData } from '@/src/utils/dataStructureTool/DataStructureTool';
-import NoDataPlaceHolder from '@/src/components/ui/Placeholder/NoDataPlaceHolder';
+import { Text, View } from 'react-native';
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export type PointArr = [number, number];
+
+export type ZoneData = {
+  hashId: string;
+  name: string;
+  points: Point[];
+  latLngPoints: PointArr[];
+};
 
 interface MultiplePolygonsCanvasProps {
   width: number;
@@ -18,7 +30,7 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
   zones,
   stripeAngleValue,
 }) => {
-  const image = useImage(Icons.lawn);
+  const image = useImage(require('../../assets/images/lawn.jpg'));
 
   // 计算所有多边形的整体边界
   const { globalBounds, scale, offset } = useMemo(() => {
@@ -130,7 +142,9 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
   // 如果没有区域数据，显示提示
   if (!zones || zones.length === 0) {
     return (
-      <NoDataPlaceHolder />
+      <View>
+        <Text>No zone data available.</Text>
+      </View>
     );
   }
 
