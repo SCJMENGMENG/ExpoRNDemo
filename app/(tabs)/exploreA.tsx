@@ -76,13 +76,21 @@ export default function TabTwoScreen() {
                 console.log('openDrawer')
             }} />
             <TouchableOpacity
-                style={{ height: 50, width: 120, backgroundColor: 'red', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
+                style={{ height: 50, width: 120, backgroundColor: 'red', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginTop: 10 }}
                 onPress={() => {
                     closeDrawer();
                     router.push('/child/editAreaPage')
                 }}
             >
                 <Text>Editor Skia组件</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={{ height: 50, width: 120, backgroundColor: 'red', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginTop: 10 }}
+                onPress={() => {
+                    router.push('/child/skiaDrawMapPage')
+                }}
+            >
+                <Text>Skia绘制地图</Text>
             </TouchableOpacity>
         </View>
     );
