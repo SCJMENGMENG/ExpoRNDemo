@@ -28,6 +28,7 @@ const skiaDrawMapPage = () => {
         viewH={width}
         zones={zones}
         stripeAngleValue={0}
+        activeZoneIndex={1}
       />
     </View>
   );
