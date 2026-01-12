@@ -161,12 +161,6 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
         return; // 找到第一个包含点的路径就返回
       }
     }
-
-    // 如果点击在图形外部，取消激活状态
-    setInternalActiveIndex(-1);
-    if (onZonePress) {
-      onZonePress(-1);
-    }
   };
 
   // 创建点击手势[2](@ref)
