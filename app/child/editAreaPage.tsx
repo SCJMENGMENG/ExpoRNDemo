@@ -4,13 +4,14 @@ import QuadEditorFull from '@/components/editorSkia/EditorSkiaIrregularSquareDra
 import EditorSkiaLine from '@/components/editorSkia/EditorSkiaLine';
 import QuadEditorNoSelfIntersect from '@/components/editorSkia/EditorSkiaNoIntersectSquare';
 import EditorSkiaSquare from '@/components/editorSkia/EditorSkiaSquare';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import eventBus from '../utils/EventBus';
 
 type Rect = {
   x: number;
@@ -24,6 +25,10 @@ const EditAreaPage = () => {
 
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const [editorSkiaType, setEditorSkiaType] = useState(0);
+
+  useEffect(() => {
+    eventBus.emit('changePage', false); // 非首页，禁用边缘手势
+  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#e9e9e9' }}>

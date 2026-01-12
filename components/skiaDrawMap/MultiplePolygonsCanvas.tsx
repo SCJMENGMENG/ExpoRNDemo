@@ -30,7 +30,7 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
   zones,
   stripeAngleValue,
 }) => {
-  const image = useImage(require('../../assets/images/lawn.jpg'));
+  const image = useImage(require('../../assets/images/lawn.png'));
 
   // 计算所有多边形的整体边界
   const { globalBounds, scale, offset } = useMemo(() => {
