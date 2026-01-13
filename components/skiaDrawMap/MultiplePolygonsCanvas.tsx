@@ -3,7 +3,7 @@ import { Canvas, Group, Image, Path, Skia, useImage } from '@shopify/react-nativ
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS, useDerivedValue, useSharedValue } from 'react-native-reanimated';
+import { runOnJS, runOnUI, useDerivedValue, useSharedValue, withSpring } from 'react-native-reanimated';
 
 export interface Point {
   x: number;
@@ -169,16 +169,44 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
         if (onZonePress) {
           onZonePress(i);
         }
+        // 计算该区域的包围盒与居中缩放
+        const zone = zones?.[i];
+        if (zone && zone.points.length > 0) {
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const p of zone.points) {
+            const px = p.x * layoutScale + offset.x;
+            const py = p.y * layoutScale + offset.y;
+            minX = Math.min(minX, px);
+            minY = Math.min(minY, py);
+            maxX = Math.max(maxX, px);
+            maxY = Math.max(maxY, py);
+          }
+          const boxW = Math.max(1, maxX - minX);
+          const boxH = Math.max(1, maxY - minY);
+          const cx = (minX + maxX) / 2;
+          const cy = (minY + maxY) / 2;
+          const paddingRatio = 0.8; // 目标占视图 80%
+          const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
+          // 只放大不缩小：保持至少当前缩放
+          const desired = Math.max(scale.value, fitScale);
+          runOnUI(focusToWorklet)(cx, cy, desired);
+        }
         return;
       }
     }
   };
 
-  // 双击重置缩放和平移
-  const handleDoubleTap = () => {
-    scale.value = 1;
-    translateX.value = 0;
-    translateY.value = 0;
+  // 计算并聚焦到某个区域中心（在UI线程执行动画）
+  const focusToWorklet = (cx: number, cy: number, targetScale: number) => {
+    'worklet';
+    const minS = 0.5;
+    const maxS = 3;
+    const s = Math.max(minS, Math.min(maxS, targetScale));
+    scale.value = withSpring(s);
+    // 注意：当前Group的变换顺序为 scale -> translate
+    // 屏幕中心对齐公式（scale -> translate）：T = screenCenter - s * contentCenter
+    translateX.value = withSpring(width / 2 - s * cx);
+    translateY.value = withSpring(viewH / 2 - s * cy);
   };
 
   // 修正手势处理 - 简化实现
@@ -219,11 +247,7 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
       translateY.value = savedTranslate.value.y + event.translationY;
     });
 
-  const tapGesture = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd((event) => {
-      runOnJS(handleDoubleTap)();
-    });
+  // 取消双击重置：不再注册双击手势
 
   const singleTapGesture = Gesture.Tap()
     .onEnd((event) => {
@@ -234,7 +258,7 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
   const composedGestures = Gesture.Simultaneous(
     pinchGesture,
     panGesture,
-    Gesture.Exclusive(tapGesture, singleTapGesture)
+    singleTapGesture
   );
 
 
