@@ -1,11 +1,12 @@
+import MapboxGL from "@rnmapbox/maps";
+import { Canvas, Circle, DashPathEffect, Paint, Path, Rect, Skia } from '@shopify/react-native-skia';
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Canvas, Path, Circle, Skia, Paint, DashPathEffect, Rect } from '@shopify/react-native-skia';
-import Animated, {
-  useSharedValue,
-  useDerivedValue,
-} from 'react-native-reanimated';
+import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 const circleW = 16;
 const cornerCubeW = 16;
@@ -225,6 +226,22 @@ export default function EditorSkiaSquare() {
 
   return (
     <View style={StyleSheet.absoluteFill}>
+      <MapboxGL.MapView
+        style={{ flex: 1 }}
+        styleURL={MapboxGL.StyleURL.Satellite}
+        logoEnabled={false}
+        attributionEnabled={false}
+        rotateEnabled={false}
+        pitchEnabled={false}
+        scaleBarEnabled={false}
+      >
+        <MapboxGL.Camera
+          zoomLevel={16}
+          centerCoordinate={[113.8638225545, 22.8987145288]}
+          animationMode={'moveTo'}
+          animationDuration={100}
+        />
+      </MapboxGL.MapView>
       <GestureDetector gesture={panGesture}>
         <Canvas style={StyleSheet.absoluteFill}>
           {/* 矩形 */}

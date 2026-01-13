@@ -24,6 +24,9 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import MapboxGL from "@rnmapbox/maps";
+
+MapboxGL.setAccessToken("pk.eyJ1IjoiNXVsZTB1NHciLCJhIjoiY201MTd5NDFkMXJvODJrcTdjcHYxNWw5ciJ9.rDNgIZpoJfBTWFLOuLSzrg");
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
