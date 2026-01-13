@@ -185,28 +185,34 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
       savedScale.value = scale.value;
-      savedTranslate.value = { x: translateX.value, y: translateY.value };
+      savedTranslate.value = {
+        x: translateX.value,
+        y: translateY.value,
+      };
     })
     .onUpdate((event) => {
-      // 限制缩放范围
       const newScale = Math.max(0.5, Math.min(3, savedScale.value * event.scale));
+      const ratio = newScale / savedScale.value;
+
+      const focalX = event.focalX;
+      const focalY = event.focalY;
+
+      translateX.value =
+        focalX - (focalX - savedTranslate.value.x) * ratio;
+      translateY.value =
+        focalY - (focalY - savedTranslate.value.y) * ratio;
+
       scale.value = newScale;
-
-      // 简化缩放逻辑：围绕手势焦点缩放
-      if (event.numberOfPointers === 2) {
-        const focalX = event.focalX;
-        const focalY = event.focalY;
-
-        translateX.value = focalX - (focalX - savedTranslate.value.x) * (newScale / savedScale.value);
-        translateY.value = focalY - (focalY - savedTranslate.value.y) * (newScale / savedScale.value);
-      }
     });
 
   const panGesture = Gesture.Pan()
     .minPointers(1)
-    .maxPointers(2)
+    .maxPointers(1) // ⭐ 关键：禁止双指
     .onStart(() => {
-      savedTranslate.value = { x: translateX.value, y: translateY.value };
+      savedTranslate.value = {
+        x: translateX.value,
+        y: translateY.value,
+      };
     })
     .onUpdate((event) => {
       translateX.value = savedTranslate.value.x + event.translationX;
@@ -225,10 +231,12 @@ const MultiplePolygonsCanvas: React.FC<MultiplePolygonsCanvasProps> = ({
     });
 
   // 关键修正：正确的手势组合
-  const composedGestures = Gesture.Race(
-    Gesture.Simultaneous(pinchGesture, panGesture),
+  const composedGestures = Gesture.Simultaneous(
+    pinchGesture,
+    panGesture,
     Gesture.Exclusive(tapGesture, singleTapGesture)
   );
+
 
   // 使用派生值计算变换矩阵
   const transform = useDerivedValue(() => {
