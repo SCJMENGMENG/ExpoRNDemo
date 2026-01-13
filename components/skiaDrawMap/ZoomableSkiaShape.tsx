@@ -103,6 +103,10 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
       };
     })
     .onUpdate((event) => {
+      // 仅在双指时处理缩放
+      if ((event.numberOfPointers ?? 2) < 2) {
+        return;
+      }
       const nextScale = Math.max(
         minScale,
         Math.min(maxScale, savedScale.value * event.scale)
@@ -110,8 +114,8 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
 
       const scaleRatio = nextScale / savedScale.value;
 
-      const focalX = event.focalX;
-      const focalY = event.focalY;
+      const focalX = event.focalX ?? width / 2;
+      const focalY = event.focalY ?? height / 2;
 
       // ⭐ 核心修正公式
       translateX.value =
@@ -127,17 +131,18 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
 
   // 处理拖拽手势[1](@ref)
   const panGesture = Gesture.Pan()
-    .minPointers(1)
-    .maxPointers(1)
     .onStart(() => {
-      savedTranslate.value = {
-        x: translateX.value,
-        y: translateY.value,
-      };
     })
     .onUpdate((event) => {
-      translateX.value = savedTranslate.value.x + event.translationX;
-      translateY.value = savedTranslate.value.y + event.translationY;
+      const pointers = event.numberOfPointers ?? 1;
+
+      if (pointers === 1) {
+        translateX.value = savedTranslate.value.x + event.translationX;
+        translateY.value = savedTranslate.value.y + event.translationY;
+      } else if (pointers === 2) {
+        translateX.value = translateX.value + event.translationX;
+        translateY.value = translateY.value + event.translationY;
+      }
     })
     .onEnd(() => {
       translateX.value = withSpring(translateX.value);
