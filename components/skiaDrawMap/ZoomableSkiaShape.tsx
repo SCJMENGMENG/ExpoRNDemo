@@ -12,6 +12,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   useDerivedValue,
   useSharedValue,
+  withDecay,
   withSpring
 } from 'react-native-reanimated';
 
@@ -132,29 +133,37 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
   // 处理拖拽手势[1](@ref)
   const panGesture = Gesture.Pan()
     .onStart(() => {
+      savedTranslate.value = {
+        x: translateX.value,
+        y: translateY.value,
+      };
     })
     .onUpdate((event) => {
+      // 仅处理单指平移；双指平移交由捏合的焦点移动感受提供
       const pointers = event.numberOfPointers ?? 1;
-
       if (pointers === 1) {
         translateX.value = savedTranslate.value.x + event.translationX;
         translateY.value = savedTranslate.value.y + event.translationY;
-      } else if (pointers === 2) {
-        translateX.value = translateX.value + event.translationX;
-        translateY.value = translateY.value + event.translationY;
       }
+      // else if (pointers === 2) {
+      //   translateX.value = translateX.value + event.translationX;
+      //   translateY.value = translateY.value + event.translationY;
+      // }
     })
-    .onEnd(() => {
-      translateX.value = withSpring(translateX.value);
-      translateY.value = withSpring(translateY.value);
+    .onEnd((event) => {
+      // 使用动量衰减以获得更贴近地图的滑动手感（兼容TS类型）
+      const ev: any = event as any;
+      const vx = ev?.velocityX ?? 0;
+      const vy = ev?.velocityY ?? 0;
+      translateX.value = withDecay({ velocity: vx });
+      translateY.value = withDecay({ velocity: vy });
     });
 
   // 组合手势[7](@ref)
-  const composedGestures = Gesture.Simultaneous(
+  const composedGestures = Gesture.Race(
     pinchGesture,
     panGesture,
   );
-
 
   // 使用派生值计算变换矩阵[1](@ref)
   const transform = useDerivedValue(() => {
