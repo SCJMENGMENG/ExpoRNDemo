@@ -1,19 +1,18 @@
 // ZoomableSkiaShape.tsx
-import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { 
-  Canvas, 
-  Circle, 
-  Group, 
+import {
+  Canvas,
+  Circle,
+  Group,
   Path,
   Skia
 } from '@shopify/react-native-skia';
+import React, { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { 
-  useSharedValue, 
-  useDerivedValue, 
-  withSpring,
-  runOnJS 
+import {
+  useDerivedValue,
+  useSharedValue,
+  withSpring
 } from 'react-native-reanimated';
 
 interface ZoomableSkiaShapeProps {
@@ -49,7 +48,7 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
     switch (shapeType) {
       case 'circle':
         return null; // 圆形使用Circle组件单独处理
-        
+
       case 'rectangle':
         const rectPath = Skia.Path.Make();
         rectPath.addRect({
@@ -59,7 +58,7 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
           height: size,
         });
         return rectPath;
-        
+
       case 'triangle':
         const trianglePath = Skia.Path.Make();
         trianglePath.moveTo(centerX, centerY - size / 2);
@@ -67,19 +66,19 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
         trianglePath.lineTo(centerX + size / 2, centerY + size / 2);
         trianglePath.close();
         return trianglePath;
-        
+
       case 'star':
         const starPath = Skia.Path.Make();
         const points = 5;
         const outerRadius = size / 2;
         const innerRadius = size / 4;
-        
+
         for (let i = 0; i < points * 2; i++) {
           const radius = i % 2 === 0 ? outerRadius : innerRadius;
           const angle = (Math.PI / points) * i - Math.PI / 2;
           const x = centerX + radius * Math.cos(angle);
           const y = centerY + radius * Math.sin(angle);
-          
+
           if (i === 0) {
             starPath.moveTo(x, y);
           } else {
@@ -88,7 +87,7 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
         }
         starPath.close();
         return starPath;
-        
+
       default:
         return null;
     }
@@ -98,90 +97,59 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
       savedScale.value = scale.value;
-      savedTranslate.value = { x: translateX.value, y: translateY.value };
+      savedTranslate.value = {
+        x: translateX.value,
+        y: translateY.value,
+      };
     })
     .onUpdate((event) => {
-      // 计算新的缩放比例，限制在minScale和maxScale之间
-      const newScale = Math.max(minScale, Math.min(maxScale, savedScale.value * event.scale));
-      
-      if (event.numberOfPointers === 2) {
-        // 获取手势焦点（两指中心点）
-        const focalX = event.focalX;
-        const focalY = event.focalY;
-        
-        // 计算缩放中心点对应的画布坐标
-        const centerX = (focalX - savedTranslate.value.x) / savedScale.value;
-        const centerY = (focalY - savedTranslate.value.y) / savedScale.value;
-        
-        // 基于缩放中心点计算新的平移量
-        translateX.value = focalX - centerX * newScale;
-        translateY.value = focalY - centerY * newScale;
-      }
-      
-      scale.value = newScale;
+      const nextScale = Math.max(
+        minScale,
+        Math.min(maxScale, savedScale.value * event.scale)
+      );
+
+      const scaleRatio = nextScale / savedScale.value;
+
+      const focalX = event.focalX;
+      const focalY = event.focalY;
+
+      // ⭐ 核心修正公式
+      translateX.value =
+        focalX - (focalX - savedTranslate.value.x) * scaleRatio;
+      translateY.value =
+        focalY - (focalY - savedTranslate.value.y) * scaleRatio;
+
+      scale.value = nextScale;
     })
     .onEnd(() => {
-      // 手势结束时添加弹性动画
-      scale.value = withSpring(scale.value, {
-        damping: 20,
-        stiffness: 90,
-      });
+      scale.value = withSpring(scale.value);
     });
 
   // 处理拖拽手势[1](@ref)
   const panGesture = Gesture.Pan()
     .minPointers(1)
-    .maxPointers(2)
+    .maxPointers(1)
     .onStart(() => {
-      savedTranslate.value = { x: translateX.value, y: translateY.value };
+      savedTranslate.value = {
+        x: translateX.value,
+        y: translateY.value,
+      };
     })
     .onUpdate((event) => {
-      const newTranslateX = savedTranslate.value.x + event.translationX;
-      const newTranslateY = savedTranslate.value.y + event.translationY;
-      
-      // 添加边界限制，防止视图移出画布太远
-      const maxTranslateX = width * (scale.value - 1) / 2;
-      const maxTranslateY = height * (scale.value - 1) / 2;
-      
-      translateX.value = Math.max(-maxTranslateX, Math.min(maxTranslateX, newTranslateX));
-      translateY.value = Math.max(-maxTranslateY, Math.min(maxTranslateY, newTranslateY));
+      translateX.value = savedTranslate.value.x + event.translationX;
+      translateY.value = savedTranslate.value.y + event.translationY;
     })
     .onEnd(() => {
-      // 拖拽结束时添加弹性动画
-      translateX.value = withSpring(translateX.value, {
-        damping: 20,
-        stiffness: 90,
-      });
-      translateY.value = withSpring(translateY.value, {
-        damping: 20,
-        stiffness: 90,
-      });
-    });
-
-  // 双击重置手势
-  const tapGesture = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd(() => {
-      // 双击重置缩放和平移
-      scale.value = withSpring(initialScale, {
-        damping: 20,
-        stiffness: 90,
-      });
-      translateX.value = withSpring(0, {
-        damping: 20,
-        stiffness: 90,
-      });
-      translateY.value = withSpring(0, {
-        damping: 20,
-        stiffness: 90,
-      });
+      translateX.value = withSpring(translateX.value);
+      translateY.value = withSpring(translateY.value);
     });
 
   // 组合手势[7](@ref)
-  const composedGestures = Gesture.Race(
-    Gesture.Simultaneous(pinchGesture, panGesture),
-    tapGesture
+  const composedGestures = Gesture.Simultaneous(
+    pinchGesture,
+    panGesture,
   );
+
 
   // 使用派生值计算变换矩阵[1](@ref)
   const transform = useDerivedValue(() => {
@@ -223,7 +191,7 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
                 strokeCap="round"
               />
             ) : null}
-            
+
             {/* 添加填充版本用于更好的视觉反馈 */}
             {shapeType === 'circle' ? (
               <Circle
