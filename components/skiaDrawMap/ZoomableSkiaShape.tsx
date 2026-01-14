@@ -40,59 +40,62 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
   const savedScale = useSharedValue(initialScale);
   const savedTranslate = useSharedValue({ x: 0, y: 0 });
 
-  // 生成不同形状的路径[1,4](@ref)
-  const shapePath = useMemo(() => {
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const size = Math.min(width, height) * 0.3;
+  // 生成四种形状（居中尺寸一致），并计算水平排列的位置
+  const layout = useMemo(() => {
+    const cy = height / 2;
+    // 把初始尺寸调小一些
+    const size = Math.min(width, height) * 0.18;
+    // 动态留白和间距，避免重叠
+    const padding = Math.min(width, height) * 0.05; // 5% 边距
+    const available = Math.max(width - 2 * padding - 4 * size, 0);
+    const gap = Math.max(available / 3, 8); // 至少 8px 的间距
 
-    switch (shapeType) {
-      case 'circle':
-        return null; // 圆形使用Circle组件单独处理
+    // 四个中心点，从左到右
+    const x0 = padding + size / 2;
+    const x1 = x0 + size + gap;
+    const x2 = x1 + size + gap;
+    const x3 = x2 + size + gap;
 
-      case 'rectangle':
-        const rectPath = Skia.Path.Make();
-        rectPath.addRect({
-          x: centerX - size / 2,
-          y: centerY - size / 2,
-          width: size,
-          height: size,
-        });
-        return rectPath;
+    // 构建工具
+    const makeRect = (cx: number, cy: number) => {
+      const p = Skia.Path.Make();
+      p.addRect({ x: cx - size / 2, y: cy - size / 2, width: size, height: size });
+      return p;
+    };
+    const makeTriangle = (cx: number, cy: number) => {
+      const p = Skia.Path.Make();
+      p.moveTo(cx, cy - size / 2);
+      p.lineTo(cx - size / 2, cy + size / 2);
+      p.lineTo(cx + size / 2, cy + size / 2);
+      p.close();
+      return p;
+    };
+    const makeStar = (cx: number, cy: number) => {
+      const p = Skia.Path.Make();
+      const points = 5;
+      const outerRadius = size / 2;
+      const innerRadius = size / 4;
+      for (let i = 0; i < points * 2; i++) {
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const angle = (Math.PI / points) * i - Math.PI / 2;
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        if (i === 0) p.moveTo(x, y);
+        else p.lineTo(x, y);
+      }
+      p.close();
+      return p;
+    };
 
-      case 'triangle':
-        const trianglePath = Skia.Path.Make();
-        trianglePath.moveTo(centerX, centerY - size / 2);
-        trianglePath.lineTo(centerX - size / 2, centerY + size / 2);
-        trianglePath.lineTo(centerX + size / 2, centerY + size / 2);
-        trianglePath.close();
-        return trianglePath;
-
-      case 'star':
-        const starPath = Skia.Path.Make();
-        const points = 5;
-        const outerRadius = size / 2;
-        const innerRadius = size / 4;
-
-        for (let i = 0; i < points * 2; i++) {
-          const radius = i % 2 === 0 ? outerRadius : innerRadius;
-          const angle = (Math.PI / points) * i - Math.PI / 2;
-          const x = centerX + radius * Math.cos(angle);
-          const y = centerY + radius * Math.sin(angle);
-
-          if (i === 0) {
-            starPath.moveTo(x, y);
-          } else {
-            starPath.lineTo(x, y);
-          }
-        }
-        starPath.close();
-        return starPath;
-
-      default:
-        return null;
-    }
-  }, [width, height, shapeType]);
+    return {
+      cy,
+      size,
+      rectangle: makeRect(x1, cy),
+      triangle: makeTriangle(x2, cy),
+      star: makeStar(x3, cy),
+      circleCenterX: x0,
+    };
+  }, [width, height]);
 
   // 处理捏合手势[7](@ref)
   const pinchGesture = Gesture.Pinch()
@@ -184,42 +187,54 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
       <GestureDetector gesture={composedGestures}>
         <Canvas style={styles.canvas}>
           <Group transform={transform}>
-            {shapeType === 'circle' ? (
-              // 圆形使用Circle组件[1](@ref)
-              <Circle
-                cx={width / 2}
-                cy={height / 2}
-                r={Math.min(width, height) * 0.15}
-                color="#4A90E2"
-                style="stroke"
-                strokeWidth={strokeWidth}
-              />
-            ) : shapePath ? (
-              // 其他形状使用Path组件[1](@ref)
-              <Path
-                path={shapePath}
-                color="#E2474A"
-                style="stroke"
-                strokeWidth={strokeWidth}
-                strokeJoin="round"
-                strokeCap="round"
-              />
-            ) : null}
+            {/* 1) Circle */}
+            <Circle
+              cx={layout.circleCenterX}
+              cy={layout.cy}
+              r={layout.size / 2}
+              color="#4A90E2"
+              style="stroke"
+              strokeWidth={strokeWidth}
+            />
+            <Circle
+              cx={layout.circleCenterX}
+              cy={layout.cy}
+              r={layout.size / 2}
+              color="rgba(74, 144, 226, 0.1)"
+            />
 
-            {/* 添加填充版本用于更好的视觉反馈 */}
-            {shapeType === 'circle' ? (
-              <Circle
-                cx={width / 2}
-                cy={height / 2}
-                r={Math.min(width, height) * 0.15}
-                color="rgba(74, 144, 226, 0.1)"
-              />
-            ) : shapePath ? (
-              <Path
-                path={shapePath}
-                color="rgba(226, 71, 74, 0.1)"
-              />
-            ) : null}
+            {/* 2) Rectangle */}
+            <Path
+              path={layout.rectangle}
+              color="#E2474A"
+              style="stroke"
+              strokeWidth={strokeWidth}
+              strokeJoin="round"
+              strokeCap="round"
+            />
+            <Path path={layout.rectangle} color="rgba(226, 71, 74, 0.1)" />
+
+            {/* 3) Triangle */}
+            <Path
+              path={layout.triangle}
+              color="#27AE60"
+              style="stroke"
+              strokeWidth={strokeWidth}
+              strokeJoin="round"
+              strokeCap="round"
+            />
+            <Path path={layout.triangle} color="rgba(39, 174, 96, 0.1)" />
+
+            {/* 4) Star */}
+            <Path
+              path={layout.star}
+              color="#F39C12"
+              style="stroke"
+              strokeWidth={strokeWidth}
+              strokeJoin="round"
+              strokeCap="round"
+            />
+            <Path path={layout.star} color="rgba(243, 156, 18, 0.1)" />
           </Group>
         </Canvas>
       </GestureDetector>
