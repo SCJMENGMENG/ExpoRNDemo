@@ -39,6 +39,11 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
   const translateY = useSharedValue(0);
   const savedScale = useSharedValue(initialScale);
   const savedTranslate = useSharedValue({ x: 0, y: 0 });
+  // 仅方形的局部偏移（在世界坐标中）
+  const rectOffsetX = useSharedValue(0);
+  const rectOffsetY = useSharedValue(0);
+  const savedRectOffset = useSharedValue({ x: 0, y: 0 });
+  const activeTarget = useSharedValue<'rect' | 'group' | null>(null);
 
   // 生成四种形状（居中尺寸一致），并计算水平排列的位置
   const layout = useMemo(() => {
@@ -94,6 +99,10 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
       triangle: makeTriangle(x2, cy),
       star: makeStar(x3, cy),
       circleCenterX: x0,
+      rectMinX: x1 - size / 2,
+      rectMinY: cy - size / 2,
+      rectW: size,
+      rectH: size,
     };
   }, [width, height]);
 
@@ -101,13 +110,9 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
       savedScale.value = scale.value;
-      savedTranslate.value = {
-        x: translateX.value,
-        y: translateY.value,
-      };
     })
     .onUpdate((event) => {
-      // 仅在双指时处理缩放
+      // 双指仅缩放，不改变平移
       if ((event.numberOfPointers ?? 2) < 2) {
         return;
       }
@@ -115,18 +120,6 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
         minScale,
         Math.min(maxScale, savedScale.value * event.scale)
       );
-
-      const scaleRatio = nextScale / savedScale.value;
-
-      const focalX = event.focalX ?? width / 2;
-      const focalY = event.focalY ?? height / 2;
-
-      // ⭐ 核心修正公式
-      translateX.value =
-        focalX - (focalX - savedTranslate.value.x) * scaleRatio;
-      translateY.value =
-        focalY - (focalY - savedTranslate.value.y) * scaleRatio;
-
       scale.value = nextScale;
     })
     .onEnd(() => {
@@ -135,31 +128,46 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
 
   // 处理拖拽手势[1](@ref)
   const panGesture = Gesture.Pan()
-    .onStart(() => {
+    .onStart((event) => {
       savedTranslate.value = {
         x: translateX.value,
         y: translateY.value,
       };
+      savedRectOffset.value = {
+        x: rectOffsetX.value,
+        y: rectOffsetY.value,
+      };
+      const x = (event as any)?.x ?? 0;
+      const y = (event as any)?.y ?? 0;
+      // 当前屏幕上的方形区域（考虑整体缩放和平移 + 局部偏移）
+      const rx = translateX.value + (layout.rectMinX + rectOffsetX.value) * scale.value;
+      const ry = translateY.value + (layout.rectMinY + rectOffsetY.value) * scale.value;
+      const rw = layout.rectW * scale.value;
+      const rh = layout.rectH * scale.value;
+      const insideRect = x >= rx && x <= rx + rw && y >= ry && y <= ry + rh;
+      activeTarget.value = insideRect ? 'rect' : 'group';
     })
     .onUpdate((event) => {
-      // 仅处理单指平移；双指平移交由捏合的焦点移动感受提供
       const pointers = event.numberOfPointers ?? 1;
-      if (pointers === 1) {
+      if (pointers !== 1) return; // 双指不支持平移
+      if (activeTarget.value === 'rect') {
+        // 将屏幕位移转换为世界坐标偏移
+        rectOffsetX.value = savedRectOffset.value.x + event.translationX / scale.value;
+        rectOffsetY.value = savedRectOffset.value.y + event.translationY / scale.value;
+      } else {
         translateX.value = savedTranslate.value.x + event.translationX;
         translateY.value = savedTranslate.value.y + event.translationY;
       }
-      // else if (pointers === 2) {
-      //   translateX.value = translateX.value + event.translationX;
-      //   translateY.value = translateY.value + event.translationY;
-      // }
     })
     .onEnd((event) => {
-      // 使用动量衰减以获得更贴近地图的滑动手感（兼容TS类型）
-      const ev: any = event as any;
-      const vx = ev?.velocityX ?? 0;
-      const vy = ev?.velocityY ?? 0;
-      translateX.value = withDecay({ velocity: vx });
-      translateY.value = withDecay({ velocity: vy });
+      if (activeTarget.value === 'group') {
+        const ev: any = event as any;
+        const vx = ev?.velocityX ?? 0;
+        const vy = ev?.velocityY ?? 0;
+        translateX.value = withDecay({ velocity: vx });
+        translateY.value = withDecay({ velocity: vy });
+      }
+      activeTarget.value = null;
     });
 
   // 组合手势[7](@ref)
@@ -180,6 +188,14 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
   // 边框宽度随缩放反向变化，保持视觉一致性
   const strokeWidth = useDerivedValue(() => {
     return 2 / scale.value;
+  });
+
+  // 方形的局部变换（在世界坐标，随后受整体 Group 的缩放/平移影响）
+  const rectLocalTransform = useDerivedValue(() => {
+    return [
+      { translateX: rectOffsetX.value },
+      { translateY: rectOffsetY.value },
+    ];
   });
 
   return (
@@ -203,16 +219,18 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
               color="rgba(74, 144, 226, 0.1)"
             />
 
-            {/* 2) Rectangle */}
-            <Path
-              path={layout.rectangle}
-              color="#E2474A"
-              style="stroke"
-              strokeWidth={strokeWidth}
-              strokeJoin="round"
-              strokeCap="round"
-            />
-            <Path path={layout.rectangle} color="rgba(226, 71, 74, 0.1)" />
+            {/* 2) Rectangle - 仅方形可被单指独立拖动 */}
+            <Group transform={rectLocalTransform}>
+              <Path
+                path={layout.rectangle}
+                color="#E2474A"
+                style="stroke"
+                strokeWidth={strokeWidth}
+                strokeJoin="round"
+                strokeCap="round"
+              />
+              <Path path={layout.rectangle} color="rgba(226, 71, 74, 0.1)" />
+            </Group>
 
             {/* 3) Triangle */}
             <Path
