@@ -170,7 +170,7 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
       const endX = lineCx.value + dx;
       const endY = lineCy.value + dy;
 
-      const hitRadius = 12 / scale.value; // 端点命中半径（缩放自适应）
+      const hitRadius = 24 / scale.value; // 端点命中半径（缩放自适应，更大更易点中）
       const dist2 = (ax: number, ay: number, bx: number, by: number) => {
         const dx = ax - bx;
         const dy = ay - by;
@@ -213,7 +213,7 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
           const projY = y1 + t * vy;
           return Math.hypot(px - projX, py - projY);
         };
-        const hitTol = 10 / scale.value; // 线段宽度命中容差
+        const hitTol = 22 / scale.value; // 线段宽度命中容差（更宽更易拖拽）
         const d = pointToSegmentDistance(wx, wy, startX, startY, endX, endY);
         activeTarget.value = d <= hitTol ? 'line' : 'group';
       }
