@@ -2,9 +2,11 @@
 import {
   Canvas,
   Circle,
+  DashPathEffect,
   Group,
+  Paint,
   Path,
-  Skia
+  Skia,
 } from '@shopify/react-native-skia';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -40,10 +42,17 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
   const savedScale = useSharedValue(initialScale);
   const savedTranslate = useSharedValue({ x: 0, y: 0 });
   // 仅方形的局部偏移（在世界坐标中）
-  const rectOffsetX = useSharedValue(0);
-  const rectOffsetY = useSharedValue(0);
-  const savedRectOffset = useSharedValue({ x: 0, y: 0 });
-  const activeTarget = useSharedValue<'rect' | 'group' | null>(null);
+  // 线段（替换原方形）的世界坐标几何与交互状态
+  const lineCx = useSharedValue(0);
+  const lineCy = useSharedValue(0);
+  const lineLen = useSharedValue(100);
+  const lineRot = useSharedValue(0);
+  const savedLineCenter = useSharedValue({ x: 0, y: 0 });
+  const activeTarget = useSharedValue<'line-start' | 'line-end' | 'line' | 'group' | null>(null);
+  const anchorX = useSharedValue(0);
+  const anchorY = useSharedValue(0);
+  const startLen = useSharedValue(0);
+  const startAngle = useSharedValue(0);
 
   // 生成四种形状（居中尺寸一致），并计算水平排列的位置
   const layout = useMemo(() => {
@@ -92,7 +101,7 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
       return p;
     };
 
-    return {
+    const layout = {
       cy,
       size,
       rectangle: makeRect(x1, cy),
@@ -103,7 +112,16 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
       rectMinY: cy - size / 2,
       rectW: size,
       rectH: size,
+      rectCenterX: x1,
     };
+
+    // 初始化线段中心与长度（与原方形位置一致）
+    lineCx.value = layout.rectCenterX;
+    lineCy.value = layout.cy;
+    lineLen.value = layout.size * 0.8;
+    lineRot.value = 0;
+
+    return layout;
   }, [width, height]);
 
   // 处理捏合手势[7](@ref)
@@ -133,28 +151,92 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
         x: translateX.value,
         y: translateY.value,
       };
-      savedRectOffset.value = {
-        x: rectOffsetX.value,
-        y: rectOffsetY.value,
+      savedLineCenter.value = {
+        x: lineCx.value,
+        y: lineCy.value,
       };
-      const x = (event as any)?.x ?? 0;
-      const y = (event as any)?.y ?? 0;
-      // 当前屏幕上的方形区域（考虑整体缩放和平移 + 局部偏移）
-      const rx = translateX.value + (layout.rectMinX + rectOffsetX.value) * scale.value;
-      const ry = translateY.value + (layout.rectMinY + rectOffsetY.value) * scale.value;
-      const rw = layout.rectW * scale.value;
-      const rh = layout.rectH * scale.value;
-      const insideRect = x >= rx && x <= rx + rw && y >= ry && y <= ry + rh;
-      activeTarget.value = insideRect ? 'rect' : 'group';
+
+      // 将触点从屏幕坐标转换到世界坐标用于精确命中
+      const sx = (event as any)?.x ?? 0;
+      const sy = (event as any)?.y ?? 0;
+      const wx = (sx - translateX.value) / scale.value;
+      const wy = (sy - translateY.value) / scale.value;
+
+      // 线段端点（世界坐标）
+      const dx = Math.cos(lineRot.value) * lineLen.value / 2;
+      const dy = Math.sin(lineRot.value) * lineLen.value / 2;
+      const startX = lineCx.value - dx;
+      const startY = lineCy.value - dy;
+      const endX = lineCx.value + dx;
+      const endY = lineCy.value + dy;
+
+      const hitRadius = 12 / scale.value; // 端点命中半径（缩放自适应）
+      const dist2 = (ax: number, ay: number, bx: number, by: number) => {
+        const dx = ax - bx;
+        const dy = ay - by;
+        return dx * dx + dy * dy;
+      };
+
+      if (dist2(wx, wy, startX, startY) <= hitRadius * hitRadius) {
+        activeTarget.value = 'line-start';
+        anchorX.value = endX;
+        anchorY.value = endY;
+        startLen.value = Math.hypot(wx - anchorX.value, wy - anchorY.value);
+        startAngle.value = Math.atan2(wy - anchorY.value, wx - anchorX.value);
+      } else if (dist2(wx, wy, endX, endY) <= hitRadius * hitRadius) {
+        activeTarget.value = 'line-end';
+        anchorX.value = startX;
+        anchorY.value = startY;
+        startLen.value = Math.hypot(wx - anchorX.value, wy - anchorY.value);
+        startAngle.value = Math.atan2(wy - anchorY.value, wx - anchorX.value);
+      } else {
+        // 点到线段的最短距离（世界坐标）
+        const pointToSegmentDistance = (
+          px: number,
+          py: number,
+          x1: number,
+          y1: number,
+          x2: number,
+          y2: number
+        ) => {
+          'worklet';
+          const vx = x2 - x1;
+          const vy = y2 - y1;
+          const wx = px - x1;
+          const wy = py - y1;
+          const c1 = vx * wx + vy * wy;
+          if (c1 <= 0) return Math.hypot(px - x1, py - y1);
+          const c2 = vx * vx + vy * vy;
+          if (c2 <= c1) return Math.hypot(px - x2, py - y2);
+          const t = c1 / c2;
+          const projX = x1 + t * vx;
+          const projY = y1 + t * vy;
+          return Math.hypot(px - projX, py - projY);
+        };
+        const hitTol = 10 / scale.value; // 线段宽度命中容差
+        const d = pointToSegmentDistance(wx, wy, startX, startY, endX, endY);
+        activeTarget.value = d <= hitTol ? 'line' : 'group';
+      }
     })
     .onUpdate((event) => {
       const pointers = event.numberOfPointers ?? 1;
       if (pointers !== 1) return; // 双指不支持平移
-      if (activeTarget.value === 'rect') {
-        // 将屏幕位移转换为世界坐标偏移
-        rectOffsetX.value = savedRectOffset.value.x + event.translationX / scale.value;
-        rectOffsetY.value = savedRectOffset.value.y + event.translationY / scale.value;
-      } else {
+      if (activeTarget.value === 'line') {
+        // 拖动整条线：按世界坐标更新中心
+        lineCx.value = savedLineCenter.value.x + event.translationX / scale.value;
+        lineCy.value = savedLineCenter.value.y + event.translationY / scale.value;
+      } else if (activeTarget.value === 'line-start' || activeTarget.value === 'line-end') {
+        // 端点拖拽：旋转+长度变化，世界坐标
+        const wx = ((event as any).x - translateX.value) / scale.value;
+        const wy = ((event as any).y - translateY.value) / scale.value;
+        const newLen = Math.max(40, Math.hypot(wx - anchorX.value, wy - anchorY.value));
+        const newAngle = Math.atan2(wy - anchorY.value, wx - anchorX.value);
+        lineLen.value = newLen;
+        lineRot.value = newAngle;
+        // 中心位于锚点与拖拽点中点
+        lineCx.value = anchorX.value + Math.cos(newAngle) * newLen / 2;
+        lineCy.value = anchorY.value + Math.sin(newAngle) * newLen / 2;
+      } else if (activeTarget.value === 'group') {
         translateX.value = savedTranslate.value.x + event.translationX;
         translateY.value = savedTranslate.value.y + event.translationY;
       }
@@ -190,12 +272,22 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
     return 2 / scale.value;
   });
 
-  // 方形的局部变换（在世界坐标，随后受整体 Group 的缩放/平移影响）
-  const rectLocalTransform = useDerivedValue(() => {
-    return [
-      { translateX: rectOffsetX.value },
-      { translateY: rectOffsetY.value },
-    ];
+  // 线段的路径与端点（世界坐标），随后受整体 Group 的缩放/平移影响
+  const lineStart = useDerivedValue(() => {
+    const dx = Math.cos(lineRot.value) * lineLen.value / 2;
+    const dy = Math.sin(lineRot.value) * lineLen.value / 2;
+    return { x: lineCx.value - dx, y: lineCy.value - dy };
+  });
+  const lineEnd = useDerivedValue(() => {
+    const dx = Math.cos(lineRot.value) * lineLen.value / 2;
+    const dy = Math.sin(lineRot.value) * lineLen.value / 2;
+    return { x: lineCx.value + dx, y: lineCy.value + dy };
+  });
+  const linePath = useDerivedValue(() => {
+    const p = Skia.Path.Make();
+    p.moveTo(lineStart.value.x, lineStart.value.y);
+    p.lineTo(lineEnd.value.x, lineEnd.value.y);
+    return p;
   });
 
   return (
@@ -219,18 +311,33 @@ const ZoomableSkiaShape: React.FC<ZoomableSkiaShapeProps> = ({
               color="rgba(74, 144, 226, 0.1)"
             />
 
-            {/* 2) Rectangle - 仅方形可被单指独立拖动 */}
-            <Group transform={rectLocalTransform}>
-              <Path
-                path={layout.rectangle}
-                color="#E2474A"
-                style="stroke"
-                strokeWidth={strokeWidth}
-                strokeJoin="round"
-                strokeCap="round"
-              />
-              <Path path={layout.rectangle} color="rgba(226, 71, 74, 0.1)" />
-            </Group>
+            {/* 2) Line - 替换原方形，支持独立拖拽与端点调整 */}
+            <Path path={linePath} color="#E2474A" style="stroke" strokeWidth={strokeWidth}>
+              <DashPathEffect intervals={[10, 6]} />
+            </Path>
+            {/* 端点方块 */}
+            <Path
+              path={useDerivedValue(() => {
+                const p = Skia.Path.Make();
+                const h = 12; // 端点可视尺寸随缩放可视保持，受 Group 缩放影响，视觉足够
+                p.addRect({ x: lineStart.value.x - h / 2, y: lineStart.value.y - h / 2, width: h, height: h });
+                return p;
+              })}
+              color="#fff"
+            >
+              <Paint color="#4CAF50" style="stroke" strokeWidth={strokeWidth} />
+            </Path>
+            <Path
+              path={useDerivedValue(() => {
+                const p = Skia.Path.Make();
+                const h = 12;
+                p.addRect({ x: lineEnd.value.x - h / 2, y: lineEnd.value.y - h / 2, width: h, height: h });
+                return p;
+              })}
+              color="#fff"
+            >
+              <Paint color="#4CAF50" style="stroke" strokeWidth={strokeWidth} />
+            </Path>
 
             {/* 3) Triangle */}
             <Path
