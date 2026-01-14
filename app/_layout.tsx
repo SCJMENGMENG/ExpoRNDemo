@@ -39,8 +39,8 @@ export default function RootLayout() {
 
 
   return (
-    <RootSiblingParent>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <RootSiblingParent>
         {/* <View style={{flex: 1, justifyContent: 'center', alignItems: 'center',
                  backgroundColor:'cyan'}} >
                 <Text>1111</Text>
@@ -57,7 +57,7 @@ export default function RootLayout() {
           </NavigationContainer>
         </ThemeProvider>
         <ToastControl />
-      </GestureHandlerRootView>
-    </RootSiblingParent>
+      </RootSiblingParent>
+    </GestureHandlerRootView>
   );
 }
