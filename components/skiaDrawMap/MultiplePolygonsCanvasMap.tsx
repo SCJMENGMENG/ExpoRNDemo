@@ -542,8 +542,6 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                           fit="cover"
                           width={width}
                           height={viewH}
-                          x={-width / 10}
-                          y={-viewH / 10}
                         />
                       </Group>
                     </Group>
