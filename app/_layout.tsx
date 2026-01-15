@@ -13,6 +13,9 @@ import eventBus from './utils/EventBus';
 import { RootSiblingParent } from 'react-native-root-siblings';
 
 import ToastControl from '@/components/toast/ToastControl';
+import MapboxGL from "@rnmapbox/maps";
+
+MapboxGL.setAccessToken("pk.eyJ1IjoiNXVsZTB1NHciLCJhIjoiY201MTd5NDFkMXJvODJrcTdjcHYxNWw5ciJ9.rDNgIZpoJfBTWFLOuLSzrg");
 
 
 export default function RootLayout() {
