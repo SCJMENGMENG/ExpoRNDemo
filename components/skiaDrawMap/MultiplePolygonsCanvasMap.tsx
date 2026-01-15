@@ -1,5 +1,5 @@
 // src/components/MapPreviewCanvas.tsx
-import { Canvas, Group, Image, Path, Skia, useImage } from '@shopify/react-native-skia';
+import { Canvas, DashPathEffect, Group, Image, Path, Skia, useImage } from '@shopify/react-native-skia';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -85,29 +85,45 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     return { globalBounds, layoutScale, offset: { x: offsetX, y: offsetY } };
   }, [data, width, viewH]);
 
-  // 为不同区域生成不同颜色
-  const getZoneColor = (index: number) => {
-    if (index === internalActiveIndex) {
-      return 'transparent';
+  // 为不同类型返回不同颜色
+  const getShapeColor = (index: number, type: number) => {
+    if (type === 1) {
+      // 通道类型的线段颜色
+      if (index === internalActiveIndex) {
+        return '#4CDAA2'; // 激活时的颜色
+      }
+      return 'yellow'; // 默认颜色
+    } else {
+      // 区域类型的填充颜色
+      if (index === internalActiveIndex) {
+        return 'transparent';
+      }
+      return '#E6E9F0';
     }
-    // const colors = ['#E8F5E8', '#F0F8FF', '#FFF0F5', '#F5F5DC'];
-    // return colors[index % colors.length];
-    return '#E6E9F0';
   };
 
-  const getBorderColor = (index: number) => {
-    if (index === internalActiveIndex) {
-      return '#4CDAA2';
+  const getShapeBorderColor = (index: number, type: number) => {
+    if (type === 1) {
+      // 通道类型的线段边框（实际就是线段本身）
+      if (index === internalActiveIndex) {
+        return '#4CDAA2'; // 激活时的颜色
+      }
+      return 'red'; // 默认颜色
+    } else {
+      // 区域类型的边框
+      if (index === internalActiveIndex) {
+        return '#4CDAA2';
+      }
+      return '#5F7280';
     }
-    return '#5F7280';
   };
 
-  // 生成所有多边形路径
-  const zonePaths = useMemo(() => {
+  // 生成所有多边形/线条路径
+  const shapePaths = useMemo(() => {
     if (!data || !globalBounds) return [];
 
     return data.map((item, index) => {
-      const { points } = item;
+      const { points, type } = item;
       const path = Skia.Path.Make();
 
       if (points.length > 0) {
@@ -122,24 +138,29 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
           const y = point.y * layoutScale + offset.y;
           path.lineTo(x, y);
         }
-        path.close();
+
+        // 如果是区域(type === 0)，则闭合路径；如果是通道(type === 1)，则不闭合
+        if (type === 0) {
+          path.close();
+        }
       }
 
       return {
         path,
-        fillColor: getZoneColor(index),
-        borderColor: getBorderColor(index),
+        type,
+        fillColor: getShapeColor(index, type),
+        borderColor: getShapeBorderColor(index, type),
       };
     });
   }, [data, globalBounds, layoutScale, offset, internalActiveIndex]);
 
-  // 创建激活区域的裁剪路径
+  // 创建激活区域的裁剪路径 - 只适用于type为0的区域
   const activeClipPath = useMemo(() => {
-    if (internalActiveIndex === -1 || !zonePaths || !zonePaths[internalActiveIndex]) {
+    if (internalActiveIndex === -1 || !shapePaths || !shapePaths[internalActiveIndex] || shapePaths[internalActiveIndex].type !== 0) {
       return null;
     }
-    return zonePaths[internalActiveIndex].path;
-  }, [zonePaths, internalActiveIndex]);
+    return shapePaths[internalActiveIndex].path;
+  }, [shapePaths, internalActiveIndex]);
 
   // 图片的旋转变换
   const imageTransform = useMemo(() => [
@@ -151,52 +172,128 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   ], [width, viewH, stripeAngleValue]);
 
   // 使用ref存储路径数据
-  const zonePathsRef = useRef(zonePaths);
+  const shapePathsRef = useRef(shapePaths);
   useEffect(() => {
-    zonePathsRef.current = zonePaths;
-  }, [zonePaths]);
+    shapePathsRef.current = shapePaths;
+  }, [shapePaths]);
 
   // 处理点击事件（考虑缩放和平移）
   const handleTap = (x: number, y: number) => {
-    if (!zonePathsRef.current) return;
+    if (!shapePathsRef.current) return;
 
     // 关键修正：正确转换坐标到缩放前的坐标系
     const originalX = (x - translateX.value) / scale.value;
     const originalY = (y - translateY.value) / scale.value;
 
-    for (let i = zonePathsRef.current.length - 1; i >= 0; i--) {
-      const path = zonePathsRef.current[i].path;
+    for (let i = shapePathsRef.current.length - 1; i >= 0; i--) {
+      const pathItem = shapePathsRef.current[i];
 
-      if (path.contains(originalX, originalY)) {
-        setInternalActiveIndex(i);
-        if (onZonePress) {
-          onZonePress(i);
-        }
-        // 计算该区域的包围盒与居中缩放
-        const zone = data?.[i];
-        if (zone && zone.points.length > 0) {
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-          for (const p of zone.points) {
-            const px = p.x * layoutScale + offset.x;
-            const py = p.y * layoutScale + offset.y;
-            minX = Math.min(minX, px);
-            minY = Math.min(minY, py);
-            maxX = Math.max(maxX, px);
-            maxY = Math.max(maxY, py);
+      // 对于type为1的线段，不进行contains检查，因为线段没有面积
+      // 如果需要检测线段附近的点击，需要使用点到线的距离算法
+      if (pathItem.type === 0) {
+        if (pathItem.path.contains(originalX, originalY)) {
+          setInternalActiveIndex(i);
+          if (onZonePress) {
+            onZonePress(i);
           }
-          const boxW = Math.max(1, maxX - minX);
-          const boxH = Math.max(1, maxY - minY);
-          const cx = (minX + maxX) / 2;
-          const cy = (minY + maxY) / 2;
-          const paddingRatio = 0.8; // 目标占视图 80%
-          const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
-          // 只放大不缩小：保持至少当前缩放
-          const desired = Math.max(scale.value, fitScale);
-          scheduleOnUI(focusToWorklet, cx, cy, desired);
+          // 计算该区域的包围盒与居中缩放
+          const zone = data?.[i];
+          if (zone && zone.points.length > 0) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const p of zone.points) {
+              const px = p.x * layoutScale + offset.x;
+              const py = p.y * layoutScale + offset.y;
+              minX = Math.min(minX, px);
+              minY = Math.min(minY, py);
+              maxX = Math.max(maxX, px);
+              maxY = Math.max(maxY, py);
+            }
+            const boxW = Math.max(1, maxX - minX);
+            const boxH = Math.max(1, maxY - minY);
+            const cx = (minX + maxX) / 2;
+            const cy = (minY + maxY) / 2;
+            const paddingRatio = 0.8; // 目标占视图 80%
+            const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
+            // 只放大不缩小：保持至少当前缩放
+            const desired = Math.max(scale.value, fitScale);
+            scheduleOnUI(focusToWorklet, cx, cy, desired);
+          }
+          return;
         }
-        return;
+      } else if (pathItem.type === 1) {
+        // 对于type为1的线段，我们可以检测点击是否靠近线段
+        // 这里使用简化的距离检查，检测点到线段的最短距离
+        if (isPointNearLine(originalX, originalY, pathItem.path, 30 / scale.value)) {
+          setInternalActiveIndex(i);
+          if (onZonePress) {
+            onZonePress(i);
+          }
+          return;
+        }
       }
     }
+  };
+
+  // 辅助函数：检查点是否靠近线段
+  const isPointNearLine = (x: number, y: number, path: any, threshold: number) => {
+    // 这里需要遍历路径上的线段来检查点到线段的距离
+    // 为了简化，我们使用一个近似算法
+    // 实际应用中可能需要更精确的点到折线距离算法
+    const tolerance = threshold || 15;
+
+    // 获取路径的所有点
+    const verbs = path.verbs;
+    const points = path.points;
+
+    if (!points || points.length < 2) return false;
+
+    // 遍历每条线段检查距离
+    for (let i = 0; i < points.length - 2; i += 2) {
+      const x1 = points[i];
+      const y1 = points[i + 1];
+      const x2 = points[i + 2];
+      const y2 = points[i + 3];
+
+      // 计算点(x,y)到线段(x1,y1)-(x2,y2)的距离
+      const distance = pointToLineDistance(x, y, x1, y1, x2, y2);
+      if (distance < tolerance) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  // 计算点到线段的距离
+  const pointToLineDistance = (px: number, py: number, x1: number, y1: number, x2: number, y2: number) => {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+
+    if (lenSq === 0) return Math.sqrt(A * A + B * B); // 线段长度为0的情况
+
+    let param = dot / lenSq;
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = px - xx;
+    const dy = py - yy;
+    return Math.sqrt(dx * dx + dy * dy);
   };
 
   // 计算并聚焦到某个区域中心（在UI线程执行动画）
@@ -289,56 +386,83 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
         {/* 应用缩放和平移变换 */}
         <Group transform={transform}>
           {/* 首先绘制所有非选中区域和type不为0的选中区域 */}
-          {zonePaths.map((shape, index) => {
+          {shapePaths.map((shape, index) => {
             // 跳过type为0且被选中的区域，这些将在最后绘制
             if (data && data[index]?.type === 0 && index === internalActiveIndex) {
               return null;
             }
 
             return (
-              <Group key={`zone-${index}`}>
-                {/* 绘制区域填充 */}
-                <Path
-                  path={shape.path}
-                  color={Skia.Color(shape.fillColor)}
-                />
+              <Group key={`shape-${index}`}>
+                {shape.type === 0 ? (
+                  <>
+                    {/* 绘制区域填充 */}
+                    <Path
+                      path={shape.path}
+                      color={Skia.Color(getShapeColor(index, shape.type))}
+                    />
 
-                {/* 如果是激活区域，则在其上方绘制图片 */}
-                {index === internalActiveIndex && activeClipPath && (
-                  <Group clip={activeClipPath} invertClip={false}>
-                    <Group transform={imageTransform}>
-                      <Image
-                        image={image}
-                        fit="cover"
-                        width={width}
-                        height={viewH}
-                        x={-width / 10}
-                        y={-viewH / 10}
-                      />
-                    </Group>
-                  </Group>
+                    {/* 如果是激活区域，则在其上方绘制图片 */}
+                    {index === internalActiveIndex && activeClipPath && (
+                      <Group clip={activeClipPath} invertClip={false}>
+                        <Group transform={imageTransform}>
+                          <Image
+                            image={image}
+                            fit="cover"
+                            width={width}
+                            height={viewH}
+                            x={-width / 10}
+                            y={-viewH / 10}
+                          />
+                        </Group>
+                      </Group>
+                    )}
+
+                    {/* 绘制区域边框 */}
+                    <Path
+                      path={shape.path}
+                      color={Skia.Color(getShapeBorderColor(index, shape.type))}
+                      style="stroke"
+                      strokeWidth={index === internalActiveIndex ? 3 / scale.value : 2 / scale.value}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {/* 绘制通道线段 - 实线背景 */}
+                    <Path
+                      path={shape.path}
+                      color={'#70A4D2'}
+                      style="stroke"
+                      strokeJoin="round"
+                      strokeCap="round"
+                      strokeWidth={10 / scale.value}
+                    />
+                    {/* 绘制通道线段 - 虚线前景 */}
+                    <Path
+                      path={shape.path}
+                      color={'#ffffff'}
+                      style="stroke"
+                      strokeJoin="round"
+                      strokeCap="round"
+                      strokeWidth={2 / scale.value}
+                    >
+                      <DashPathEffect intervals={[6, 3]} />
+                    </Path>
+                  </>
                 )}
-
-                {/* 绘制区域边框 */}
-                <Path
-                  path={shape.path}
-                  color={Skia.Color(shape.borderColor)}
-                  style="stroke"
-                  strokeWidth={index === internalActiveIndex ? 3 / scale.value : 2 / scale.value}
-                />
               </Group>
             );
           })}
 
           {/* 最后绘制type为0且被选中的区域，使其位于最顶层 */}
-          {data && zonePaths.map((shape, index) => {
+          {data && shapePaths.map((shape, index) => {
             if (data[index]?.type === 0 && index === internalActiveIndex) {
               return (
-                <Group key={`top-zone-${index}`}>
+                <Group key={`top-shape-${index}`}>
                   {/* 绘制区域填充 */}
                   <Path
                     path={shape.path}
-                    color={Skia.Color(shape.fillColor)}
+                    color={Skia.Color(getShapeColor(index, shape.type))}
                   />
 
                   {/* 绘制图片 */}
@@ -360,7 +484,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                   {/* 绘制区域边框 */}
                   <Path
                     path={shape.path}
-                    color={Skia.Color(shape.borderColor)}
+                    color={Skia.Color(getShapeBorderColor(index, shape.type))}
                     style="stroke"
                     strokeWidth={3 / scale.value}
                   />

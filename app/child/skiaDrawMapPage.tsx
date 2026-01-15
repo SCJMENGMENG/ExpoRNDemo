@@ -15,7 +15,7 @@ const skiaDrawMapPage = () => {
   }, []);
 
   const data: PolygonData[] = [
-    { hashId: 'channel1', name: 'Channel 1', type: 1, points: [{ x: 170, y: 200 }, { x: 150, y: 280 }, { x: 130, y: 350 }, { x: 100, y: 440 }, { x: 80, y: 480 }] },
+    { hashId: 'channel1', name: 'Channel 1', type: 1, points: [{ x: 170, y: 200 }, { x: 150, y: 280 }, { x: 130, y: 350 }, { x: 100, y: 380 }, { x: 80, y: 480 }] },
     { hashId: 'zone1', name: 'Zone 1', type: 0, points: [{ x: 10, y: 10 }, { x: 100, y: 10 }, { x: 100, y: 100 }, { x: 10, y: 100 }] },
     { hashId: 'zone2', name: 'Zone 2', type: 0, points: [{ x: 150, y: 150 }, { x: 250, y: 150 }, { x: 250, y: 250 }, { x: 150, y: 250 }] },
     { hashId: 'zone3', name: 'Zone 3', type: 0, points: [{ x: 10, y: 450 }, { x: 100, y: 450 }, { x: 100, y: 550 }, { x: 10, y: 550 }] },
