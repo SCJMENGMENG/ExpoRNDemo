@@ -92,7 +92,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       if (index === internalActiveIndex) {
         return '#4CDAA2'; // 激活时的颜色
       }
-      return 'yellow'; // 默认颜色
+      return '#70A4D2'; // 默认颜色
     } else {
       // 区域类型的填充颜色
       if (index === internalActiveIndex) {
@@ -103,18 +103,12 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   };
 
   const getShapeBorderColor = (index: number, type: number) => {
-    if (type === 1) {
-      // 通道类型的线段边框（实际就是线段本身）
-      if (index === internalActiveIndex) {
-        return '#4CDAA2'; // 激活时的颜色
-      }
-      return 'red'; // 默认颜色
+    if (index === internalActiveIndex) {
+      return '#4CDAA2'; // 激活时的颜色
+    } else if (type === 1) {
+      return '#70A4D2'; // channel 边框颜色
     } else {
-      // 区域类型的边框
-      if (index === internalActiveIndex) {
-        return '#4CDAA2';
-      }
-      return '#5F7280';
+      return '#5F7280'; // zone 边框颜色
     }
   };
 
@@ -188,8 +182,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     for (let i = shapePathsRef.current.length - 1; i >= 0; i--) {
       const pathItem = shapePathsRef.current[i];
 
-      // 对于type为1的线段，不进行contains检查，因为线段没有面积
-      // 如果需要检测线段附近的点击，需要使用点到线的距离算法
+      // 对于type为0的区域，使用contains检查
       if (pathItem.type === 0) {
         if (pathItem.path.contains(originalX, originalY)) {
           setInternalActiveIndex(i);
@@ -221,38 +214,58 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
           return;
         }
       } else if (pathItem.type === 1) {
-        // 对于type为1的线段，我们可以检测点击是否靠近线段
-        // 这里使用简化的距离检查，检测点到线段的最短距离
-        if (isPointNearLine(originalX, originalY, pathItem.path, 30 / scale.value)) {
-          setInternalActiveIndex(i);
-          if (onZonePress) {
-            onZonePress(i);
+        // 对于type为1的线段，使用原始数据点来检测点击
+        const line = data?.[i];
+        if (line && line.points && line.points.length > 1) {
+          // 使用原始数据中的点来计算点到线段的距离
+          if (isPointNearLineByOriginalPoints(originalX, originalY, line.points, 30 / scale.value)) {
+            setInternalActiveIndex(i);
+            if (onZonePress) {
+              onZonePress(i);
+            }
+
+            // 为线段计算中心点并居中显示
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const p of line.points) {
+              const px = p.x * layoutScale + offset.x;
+              const py = p.y * layoutScale + offset.y;
+              minX = Math.min(minX, px);
+              minY = Math.min(minY, py);
+              maxX = Math.max(maxX, px);
+              maxY = Math.max(maxY, py);
+            }
+            const boxW = Math.max(1, maxX - minX);
+            const boxH = Math.max(1, maxY - minY);
+            const cx = (minX + maxX) / 2;
+            const cy = (minY + maxY) / 2;
+            const paddingRatio = 0.8; // 目标占视图 80%
+            const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
+            // 只放大不缩小：保持至少当前缩放
+            const desired = Math.max(scale.value, fitScale);
+            scheduleOnUI(focusToWorklet, cx, cy, desired);
+            return;
           }
-          return;
         }
       }
     }
   };
 
   // 辅助函数：检查点是否靠近线段
-  const isPointNearLine = (x: number, y: number, path: any, threshold: number) => {
-    // 这里需要遍历路径上的线段来检查点到线段的距离
-    // 为了简化，我们使用一个近似算法
-    // 实际应用中可能需要更精确的点到折线距离算法
+  const isPointNearLineByOriginalPoints = (x: number, y: number, points: Point[], threshold: number) => {
     const tolerance = threshold || 15;
 
-    // 获取路径的所有点
-    const verbs = path.verbs;
-    const points = path.points;
-
-    if (!points || points.length < 2) return false;
+    if (points.length < 2) return false;
 
     // 遍历每条线段检查距离
-    for (let i = 0; i < points.length - 2; i += 2) {
-      const x1 = points[i];
-      const y1 = points[i + 1];
-      const x2 = points[i + 2];
-      const y2 = points[i + 3];
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+
+      // 将原始坐标转换为屏幕坐标
+      const x1 = p1.x * layoutScale + offset.x;
+      const y1 = p1.y * layoutScale + offset.y;
+      const x2 = p2.x * layoutScale + offset.x;
+      const y2 = p2.y * layoutScale + offset.y;
 
       // 计算点(x,y)到线段(x1,y1)-(x2,y2)的距离
       const distance = pointToLineDistance(x, y, x1, y1, x2, y2);
@@ -431,7 +444,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                     {/* 绘制通道线段 - 实线背景 */}
                     <Path
                       path={shape.path}
-                      color={'#70A4D2'}
+                      color={Skia.Color(getShapeColor(index, shape.type))}
                       style="stroke"
                       strokeJoin="round"
                       strokeCap="round"
