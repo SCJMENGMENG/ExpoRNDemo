@@ -56,11 +56,6 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   const savedScale = useSharedValue(1);
   const savedTranslate = useSharedValue({ x: 0, y: 0 });
 
-  // 同步内部状态和外部props
-  useEffect(() => {
-    setInternalActiveIndex(activeTabIndex);
-  }, [activeTabIndex]);
-
   // 计算所有多边形的整体边界
   const { globalBounds, layoutScale, offset } = useMemo(() => {
     if (!data || data.length === 0) {
@@ -93,6 +88,49 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
 
     return { globalBounds, layoutScale, offset: { x: offsetX, y: offsetY } };
   }, [data, width, viewH]);
+
+  // 计算并聚焦到某个区域中心（在UI线程执行动画）
+  const focusToWorklet = (cx: number, cy: number, targetScale: number) => {
+    'worklet';
+    const minS = 0.5;
+    const maxS = 3;
+    const s = Math.max(minS, Math.min(maxS, targetScale));
+    scale.value = withSpring(s);
+    // 注意：当前Group的变换顺序为 scale -> translate
+    // 屏幕中心对齐公式（scale -> translate）：T = screenCenter - s * contentCenter
+    translateX.value = withSpring(width / 2 - s * cx);
+    translateY.value = withSpring(viewH / 2 - s * cy);
+  };
+
+  // 同步内部状态和外部props
+  useEffect(() => {
+    setInternalActiveIndex(activeTabIndex);
+
+    // 当activeTabIndex变化时，使对应图形居中显示
+    if (activeTabIndex !== -1 && data && data[activeTabIndex]) {
+      const item = data[activeTabIndex];
+      if (item && item.data && item.data.points && item.data.points.length > 0) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const p of item.data.points) {
+          const px = p.x * layoutScale + offset.x;
+          const py = p.y * layoutScale + offset.y;
+          minX = Math.min(minX, px);
+          minY = Math.min(minY, py);
+          maxX = Math.max(maxX, px);
+          maxY = Math.max(maxY, py);
+        }
+        const boxW = Math.max(1, maxX - minX);
+        const boxH = Math.max(1, maxY - minY);
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const paddingRatio = 0.8; // 目标占视图 80%
+        const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
+        // 只放大不缩小：保持至少当前缩放
+        const desired = Math.max(scale.value, fitScale);
+        scheduleOnUI(focusToWorklet, cx, cy, desired);
+      }
+    }
+  }, [activeTabIndex, data, layoutScale, offset, width, viewH, scale, focusToWorklet]);
 
   // 为不同类型返回不同颜色
   const getShapeColor = (index: number, type: number) => {
@@ -337,19 +375,6 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     const dx = px - xx;
     const dy = py - yy;
     return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  // 计算并聚焦到某个区域中心（在UI线程执行动画）
-  const focusToWorklet = (cx: number, cy: number, targetScale: number) => {
-    'worklet';
-    const minS = 0.5;
-    const maxS = 3;
-    const s = Math.max(minS, Math.min(maxS, targetScale));
-    scale.value = withSpring(s);
-    // 注意：当前Group的变换顺序为 scale -> translate
-    // 屏幕中心对齐公式（scale -> translate）：T = screenCenter - s * contentCenter
-    translateX.value = withSpring(width / 2 - s * cx);
-    translateY.value = withSpring(viewH / 2 - s * cy);
   };
 
   // 修正手势处理 - 简化实现
