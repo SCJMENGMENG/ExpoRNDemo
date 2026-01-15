@@ -288,40 +288,87 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       <Canvas style={{ width, height: viewH }}>
         {/* 应用缩放和平移变换 */}
         <Group transform={transform}>
-          {/* 按顺序绘制每个区域：填充+图片+边框作为一个整体 */}
-          {zonePaths.map((shape, index) => (
-            <Group key={`zone-${index}`}>
-              {/* 绘制区域填充 */}
-              <Path
-                path={shape.path}
-                color={Skia.Color(shape.fillColor)}
-              />
+          {/* 首先绘制所有非选中区域和type不为0的选中区域 */}
+          {zonePaths.map((shape, index) => {
+            // 跳过type为0且被选中的区域，这些将在最后绘制
+            if (data && data[index]?.type === 0 && index === internalActiveIndex) {
+              return null;
+            }
 
-              {/* 如果是激活区域，则在其上方绘制图片 */}
-              {index === internalActiveIndex && activeClipPath && (
-                <Group clip={activeClipPath} invertClip={false}>
-                  <Group transform={imageTransform}>
-                    <Image
-                      image={image}
-                      fit="cover"
-                      width={width}
-                      height={viewH}
-                      x={-width / 10}
-                      y={-viewH / 10}
-                    />
+            return (
+              <Group key={`zone-${index}`}>
+                {/* 绘制区域填充 */}
+                <Path
+                  path={shape.path}
+                  color={Skia.Color(shape.fillColor)}
+                />
+
+                {/* 如果是激活区域，则在其上方绘制图片 */}
+                {index === internalActiveIndex && activeClipPath && (
+                  <Group clip={activeClipPath} invertClip={false}>
+                    <Group transform={imageTransform}>
+                      <Image
+                        image={image}
+                        fit="cover"
+                        width={width}
+                        height={viewH}
+                        x={-width / 10}
+                        y={-viewH / 10}
+                      />
+                    </Group>
                   </Group>
-                </Group>
-              )}
+                )}
 
-              {/* 绘制区域边框 */}
-              <Path
-                path={shape.path}
-                color={Skia.Color(shape.borderColor)}
-                style="stroke"
-                strokeWidth={index === internalActiveIndex ? 3 / scale.value : 2 / scale.value}
-              />
-            </Group>
-          ))}
+                {/* 绘制区域边框 */}
+                <Path
+                  path={shape.path}
+                  color={Skia.Color(shape.borderColor)}
+                  style="stroke"
+                  strokeWidth={index === internalActiveIndex ? 3 / scale.value : 2 / scale.value}
+                />
+              </Group>
+            );
+          })}
+
+          {/* 最后绘制type为0且被选中的区域，使其位于最顶层 */}
+          {data && zonePaths.map((shape, index) => {
+            if (data[index]?.type === 0 && index === internalActiveIndex) {
+              return (
+                <Group key={`top-zone-${index}`}>
+                  {/* 绘制区域填充 */}
+                  <Path
+                    path={shape.path}
+                    color={Skia.Color(shape.fillColor)}
+                  />
+
+                  {/* 绘制图片 */}
+                  {activeClipPath && (
+                    <Group clip={activeClipPath} invertClip={false}>
+                      <Group transform={imageTransform}>
+                        <Image
+                          image={image}
+                          fit="cover"
+                          width={width}
+                          height={viewH}
+                          x={-width / 10}
+                          y={-viewH / 10}
+                        />
+                      </Group>
+                    </Group>
+                  )}
+
+                  {/* 绘制区域边框 */}
+                  <Path
+                    path={shape.path}
+                    color={Skia.Color(shape.borderColor)}
+                    style="stroke"
+                    strokeWidth={3 / scale.value}
+                  />
+                </Group>
+              );
+            }
+            return null;
+          })}
         </Group>
       </Canvas>
     </GestureDetector>
