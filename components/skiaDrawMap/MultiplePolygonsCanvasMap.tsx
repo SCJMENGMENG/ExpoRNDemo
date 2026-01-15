@@ -288,45 +288,40 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       <Canvas style={{ width, height: viewH }}>
         {/* 应用缩放和平移变换 */}
         <Group transform={transform}>
-          {/* 首先绘制所有非激活区域的实心填充 */}
-          <Group>
-            {zonePaths.map((shape, index) => (
+          {/* 按顺序绘制每个区域：填充+图片+边框作为一个整体 */}
+          {zonePaths.map((shape, index) => (
+            <Group key={`zone-${index}`}>
+              {/* 绘制区域填充 */}
               <Path
-                key={`fill-${index}`}
                 path={shape.path}
                 color={Skia.Color(shape.fillColor)}
               />
-            ))}
-          </Group>
 
-          {/* 为激活区域单独绘制图片 */}
-          {activeClipPath && (
-            <Group clip={activeClipPath} invertClip={false}>
-              <Group transform={imageTransform}>
-                <Image
-                  image={image}
-                  fit="cover"
-                  width={width}
-                  height={viewH}
-                  x={-width / 10}
-                  y={-viewH / 10}
-                />
-              </Group>
-            </Group>
-          )}
+              {/* 如果是激活区域，则在其上方绘制图片 */}
+              {index === internalActiveIndex && activeClipPath && (
+                <Group clip={activeClipPath} invertClip={false}>
+                  <Group transform={imageTransform}>
+                    <Image
+                      image={image}
+                      fit="cover"
+                      width={width}
+                      height={viewH}
+                      x={-width / 10}
+                      y={-viewH / 10}
+                    />
+                  </Group>
+                </Group>
+              )}
 
-          {/* 绘制所有区域的边框 */}
-          <Group>
-            {zonePaths.map((shape, index) => (
+              {/* 绘制区域边框 */}
               <Path
-                key={`border-${index}`}
                 path={shape.path}
                 color={Skia.Color(shape.borderColor)}
                 style="stroke"
                 strokeWidth={index === internalActiveIndex ? 3 / scale.value : 2 / scale.value}
               />
-            ))}
-          </Group>
+            </Group>
+          ))}
         </Group>
       </Canvas>
     </GestureDetector>
