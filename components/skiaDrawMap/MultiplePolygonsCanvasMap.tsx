@@ -13,11 +13,20 @@ export interface Point {
 
 export type PointArr = [number, number];
 
-export type PolygonData = {
+export type ZoneData = {
   hashId: string;
-  type: number; // 0 - zone, 1 - channel
   name: string;
   points: Point[];
+};
+
+export type ChannelData = {
+  hashId: string;
+  points: Point[];
+};
+
+export type PolygonData = {
+  type: number; // 0表示区域，1表示通道
+  data: ZoneData | ChannelData
 };
 
 interface MultiplePolygonsCanvasMapProps {
@@ -62,7 +71,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     let maxX = -Infinity, maxY = -Infinity;
 
     data.forEach(item => {
-      item.points.forEach((point: any) => {
+      item.data?.points?.forEach((point: any) => {
         minX = Math.min(minX, point.x);
         minY = Math.min(minY, point.y);
         maxX = Math.max(maxX, point.x);
@@ -117,7 +126,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     if (!data || !globalBounds) return [];
 
     return data.map((item, index) => {
-      const { points, type } = item;
+      const { data, type } = item;
+      const { points } = data;
       const path = Skia.Path.Make();
 
       if (points.length > 0) {
@@ -191,9 +201,9 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
           }
           // 计算该区域的包围盒与居中缩放
           const zone = data?.[i];
-          if (zone && zone.points.length > 0) {
+          if (zone && zone.data && zone.data.points && zone.data.points.length > 0) {
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            for (const p of zone.points) {
+            for (const p of zone.data.points) {
               const px = p.x * layoutScale + offset.x;
               const py = p.y * layoutScale + offset.y;
               minX = Math.min(minX, px);
@@ -216,9 +226,9 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       } else if (pathItem.type === 1) {
         // 对于type为1的线段，使用原始数据点来检测点击
         const line = data?.[i];
-        if (line && line.points && line.points.length > 1) {
+        if (line && line.data && line.data.points && line.data.points.length > 1) {
           // 使用原始数据中的点来计算点到线段的距离
-          if (isPointNearLineByOriginalPoints(originalX, originalY, line.points, 30 / scale.value)) {
+          if (isPointNearLineByOriginalPoints(originalX, originalY, line.data.points, 30 / scale.value)) {
             setInternalActiveIndex(i);
             if (onZonePress) {
               onZonePress(i);
@@ -226,7 +236,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
 
             // 为线段计算中心点并居中显示
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            for (const p of line.points) {
+            for (const p of line.data.points) {
               const px = p.x * layoutScale + offset.x;
               const py = p.y * layoutScale + offset.y;
               minX = Math.min(minX, px);
