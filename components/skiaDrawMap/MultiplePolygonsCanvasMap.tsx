@@ -1,5 +1,4 @@
-// src/components/MapPreviewCanvas.tsx
-import { Canvas, DashPathEffect, Group, Image, Path, Skia, useImage } from '@shopify/react-native-skia';
+import { Canvas, DashPathEffect, Group, Image, Path, Skia, SkPath, useImage } from '@shopify/react-native-skia';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -116,6 +115,10 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     translateY.value = withSpring(viewH / 2 - s * cy);
   };
 
+  type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
+
+  const channelBoundsRef = useRef<Map<number, Bounds>>(new Map());
+
   // 同步内部状态和外部props
   useEffect(() => {
     setInternalActiveIndex(activeTabIndex);
@@ -145,33 +148,6 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       }
     }
   }, [activeTabIndex, data, layoutScale, offset, width, viewH, scale, focusToWorklet]);
-
-  // 为不同类型返回不同颜色
-  const getShapeColor = (index: number, type: number) => {
-    if (type === 1) {
-      // 通道类型的线段颜色
-      if (index === internalActiveIndex) {
-        return '#4CDAA2'; // 激活时的颜色
-      }
-      return '#70A4D2'; // 默认颜色
-    } else {
-      // 区域类型的填充颜色
-      if (index === internalActiveIndex) {
-        return 'transparent';
-      }
-      return '#E6E9F0';
-    }
-  };
-
-  const getShapeBorderColor = (index: number, type: number) => {
-    if (index === internalActiveIndex) {
-      return '#4CDAA2'; // 激活时的颜色
-    } else if (type === 1) {
-      return '#70A4D2'; // channel 边框颜色
-    } else {
-      return '#5F7280'; // zone 边框颜色
-    }
-  };
 
   // 生成所有多边形/线条路径，保留原始索引
   const shapePaths = useMemo(() => {
@@ -207,11 +183,9 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
         path,
         type,
         originalIndex, // 保存原始索引
-        fillColor: getShapeColor(originalIndex, type),
-        borderColor: getShapeBorderColor(originalIndex, type),
       };
     });
-  }, [data, globalBounds, layoutScale, offset, internalActiveIndex]);
+  }, [data, globalBounds, layoutScale, offset]);
 
   // 根据类型排序，以便先绘制通道(type 1)，再绘制区域(type 0)
   const sortedShapePaths = useMemo(() => {
@@ -226,16 +200,46 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     });
   }, [shapePaths]);
 
-  // 创建激活区域的裁剪路径 - 只适用于type为0的区域，使用原始索引
-  const activeClipPath = useMemo(() => {
-    if (internalActiveIndex === -1 || !sortedShapePaths || sortedShapePaths.every(path => path.originalIndex !== internalActiveIndex) || data?.[internalActiveIndex]?.type !== 0) {
-      return null;
-    }
 
-    // 查找对应原始索引的路径
-    const activePath = sortedShapePaths.find(path => path.originalIndex === internalActiveIndex);
-    return activePath ? activePath.path : null;
-  }, [sortedShapePaths, internalActiveIndex, data]);
+
+  useEffect(() => {
+    channelBoundsRef.current.clear();
+
+    shapePaths.forEach(p => {
+      if (p.type !== 1) return;
+
+      let minX = Infinity, minY = Infinity;
+      let maxX = -Infinity, maxY = -Infinity;
+
+      const points = data?.[p.originalIndex]?.data.points ?? [];
+      for (const pt of points) {
+        const x = mapXToScreenX(pt.x);
+        const y = mapYToScreenY(pt.y);
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+
+      channelBoundsRef.current.set(p.originalIndex, {
+        minX,
+        minY,
+        maxX,
+        maxY,
+      });
+    });
+  }, [shapePaths, data]);
+
+  // 创建激活区域的裁剪路径 - 只适用于type为0的区域，使用原始索引
+  const clipPathRef = useRef<Map<number, SkPath>>(new Map());
+  useEffect(() => {
+    shapePaths.forEach(p => {
+      if (p.type === 0) {
+        clipPathRef.current.set(p.originalIndex, p.path);
+      }
+    });
+  }, [shapePaths]);
+  const activeClipPath = clipPathRef.current.get(internalActiveIndex) ?? null;
 
   // 图片的旋转变换
   const imageTransform = useMemo(() => [
@@ -300,6 +304,21 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
         // 对于type为1的线段，使用原始数据点来检测点击
         const line = data?.[originalIndex]; // 使用原始索引
         if (line && line.data && line.data.points && line.data.points.length > 1) {
+
+          const bounds = channelBoundsRef.current.get(originalIndex);
+          if (!bounds) continue;
+
+          const tolerance = 30 / scale.value;
+
+          if (
+            originalX < bounds.minX - tolerance ||
+            originalX > bounds.maxX + tolerance ||
+            originalY < bounds.minY - tolerance ||
+            originalY > bounds.maxY + tolerance
+          ) {
+            continue; // ⭐ 直接跳过，不做线段距离计算
+          }
+
           // 使用原始数据中的点来计算点到线段的距离
           if (isPointNearLineByOriginalPoints(originalX, originalY, line.data.points, 30 / scale.value)) {
             setInternalActiveIndex(originalIndex); // 设置原始索引
@@ -482,7 +501,11 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                     {/* 绘制区域填充 */}
                     <Path
                       path={shape.path}
-                      color={Skia.Color(getShapeColor(shape.originalIndex, shape.type))}
+                      color={Skia.Color(
+                        shape.originalIndex === internalActiveIndex
+                          ? 'transparent'
+                          : '#E6E9F0'
+                      )}
                     />
 
                     {/* 如果是激活区域，则在其上方绘制图片 */}
@@ -504,7 +527,11 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                     {/* 绘制区域边框 */}
                     <Path
                       path={shape.path}
-                      color={Skia.Color(getShapeBorderColor(shape.originalIndex, shape.type))}
+                      color={Skia.Color(
+                        shape.originalIndex === internalActiveIndex
+                          ? '#4CDAA2'
+                          : '#5F7280'
+                      )}
                       style="stroke"
                       strokeWidth={shape.originalIndex === internalActiveIndex ? 3 / scale.value : 2 / scale.value}
                     />
@@ -514,7 +541,11 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                     {/* 绘制通道线段 - 实线背景 */}
                     <Path
                       path={shape.path}
-                      color={Skia.Color(getShapeColor(shape.originalIndex, shape.type))}
+                      color={Skia.Color(
+                        shape.originalIndex === internalActiveIndex
+                          ? '#4CDAA2'
+                          : '#70A4D2'
+                      )}
                       style="stroke"
                       strokeJoin="round"
                       strokeCap="round"
@@ -545,7 +576,11 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                   {/* 绘制区域填充 */}
                   <Path
                     path={shape.path}
-                    color={Skia.Color(getShapeColor(shape.originalIndex, shape.type))}
+                    color={Skia.Color(
+                      shape.originalIndex === internalActiveIndex
+                        ? 'transparent'
+                        : '#E6E9F0'
+                    )}
                   />
 
                   {/* 绘制图片 */}
@@ -565,8 +600,11 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                   {/* 绘制区域边框 */}
                   <Path
                     path={shape.path}
-                    color={Skia.Color(getShapeBorderColor(shape.originalIndex, shape.type))}
-                    style="stroke"
+                    color={Skia.Color(
+                      shape.originalIndex === internalActiveIndex
+                        ? '#4CDAA2'
+                        : '#5F7280'
+                    )} style="stroke"
                     strokeWidth={3 / scale.value}
                   />
                 </Group>
