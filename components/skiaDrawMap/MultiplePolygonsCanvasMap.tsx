@@ -258,6 +258,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
 
   // 处理点击事件（考虑缩放和平移）
   const handleTap = (x: number, y: number) => {
+    console.log('----点击事件处理开始----', x, y, shapePathsRef.current);
     if (!shapePathsRef.current) return;
 
     // 关键修正：正确转换坐标到缩放前的坐标系
@@ -411,6 +412,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   // 修正手势处理 - 简化实现
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
+      console.log('----缩放开始，当前scale：', scale.value);
       savedScale.value = scale.value;
       savedTranslate.value = {
         x: translateX.value,
@@ -430,12 +432,17 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
         focalY - (focalY - savedTranslate.value.y) * ratio;
 
       scale.value = newScale;
+    })
+    .onEnd(() => {
+      console.log('----缩放结束，当前scale：', scale.value);
     });
 
   const panGesture = Gesture.Pan()
     .minPointers(1)
     .maxPointers(1) // ⭐ 关键：禁止双指
+    .minDistance(3) // ⭐ 确保手势有效
     .onStart(() => {
+      console.log('----平移开始，当前translate：', translateX.value, translateY.value);
       savedTranslate.value = {
         x: translateX.value,
         y: translateY.value,
@@ -444,20 +451,30 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     .onUpdate((event) => {
       translateX.value = savedTranslate.value.x + event.translationX;
       translateY.value = savedTranslate.value.y + event.translationY;
+    })
+    .onEnd(() => {
+      console.log('----平移结束，当前translate：', translateX.value, translateY.value);
     });
 
   // 取消双击重置：不再注册双击手势
 
   const singleTapGesture = Gesture.Tap()
+    .maxDeltaX(5) // 允许的最大横向偏移
+    .maxDeltaY(5) // 允许的最大纵向偏移
+    .requireExternalGestureToFail(pinchGesture) // 关键修正：单指点击需要等待缩放手势失败
+    .requireExternalGestureToFail(panGesture) // 关键修正：单指点击需要等待平移手势失败
+    .onStart(() => {
+      console.log('----单指点击开始，当前translate：', translateX.value, translateY.value);
+    })
     .onEnd((event) => {
+      console.log('----单指点击结束，当前translate：', translateX.value, translateY.value);
       scheduleOnRN(handleTap, event.x, event.y);
     });
 
   // 关键修正：正确的手势组合
   const composedGestures = Gesture.Simultaneous(
     pinchGesture,
-    panGesture,
-    singleTapGesture
+    Gesture.Race(panGesture, singleTapGesture) // 竞态：单指点击和缩放/平移手势不能同时进行
   );
 
 
@@ -478,8 +495,6 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       </View>
     );
   }
-
-  console.log('---scj---:', scale.value)
 
   return (
     <GestureDetector gesture={composedGestures}>
