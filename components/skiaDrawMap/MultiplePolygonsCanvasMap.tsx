@@ -89,6 +89,20 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
     return { globalBounds, layoutScale, offset: { x: offsetX, y: offsetY } };
   }, [data, width, viewH]);
 
+  const mapYToScreenY = (y: number) => {
+    if (!globalBounds) return y;
+    // 关键公式：用 maxY 做镜像
+    // 依据全局边界和缩放，计算用于垂直翻转的中心偏移
+    // 垂直翻转：使用 (maxY - y) 将坐标系从数学坐标系转换为屏幕坐标系
+    const boundsHeight = globalBounds.maxY - globalBounds.minY;
+    const centerY = (viewH - boundsHeight * layoutScale) / 2;
+    return (globalBounds.maxY - y) * layoutScale + centerY;
+  };
+
+  const mapXToScreenX = (x: number) => {
+    return x * layoutScale + offset.x;
+  };
+
   // 计算并聚焦到某个区域中心（在UI线程执行动画）
   const focusToWorklet = (cx: number, cy: number, targetScale: number) => {
     'worklet';
@@ -112,8 +126,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       if (item && item.data && item.data.points && item.data.points.length > 0) {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (const p of item.data.points) {
-          const px = p.x * layoutScale + offset.x;
-          const py = p.y * layoutScale + offset.y;
+          const px = mapXToScreenX(p.x);
+          const py = mapYToScreenY(p.y);
           minX = Math.min(minX, px);
           minY = Math.min(minY, py);
           maxX = Math.max(maxX, px);
@@ -171,15 +185,16 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
 
       if (points.length > 0) {
         const firstPoint = points[0];
-        const startX = firstPoint.x * layoutScale + offset.x;
-        const startY = firstPoint.y * layoutScale + offset.y;
+        const startX = mapXToScreenX(firstPoint.x);
+        const startY = mapYToScreenY(firstPoint.y);
         path.moveTo(startX, startY);
 
         for (let i = 1; i < points.length; i++) {
-          const point = points[i];
-          const x = point.x * layoutScale + offset.x;
-          const y = point.y * layoutScale + offset.y;
-          path.lineTo(x, y);
+          const p = points[i];
+          path.lineTo(
+            mapXToScreenX(p.x),
+            mapYToScreenY(p.y)
+          );
         }
 
         // 如果是区域(type === 0)，则闭合路径；如果是通道(type === 1)，则不闭合
@@ -262,8 +277,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
           if (zone && zone.data && zone.data.points && zone.data.points.length > 0) {
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             for (const p of zone.data.points) {
-              const px = p.x * layoutScale + offset.x;
-              const py = p.y * layoutScale + offset.y;
+              const px = mapXToScreenX(p.x);
+              const py = mapYToScreenY(p.y);
               minX = Math.min(minX, px);
               minY = Math.min(minY, py);
               maxX = Math.max(maxX, px);
@@ -295,8 +310,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
             // 为线段计算中心点并居中显示
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             for (const p of line.data.points) {
-              const px = p.x * layoutScale + offset.x;
-              const py = p.y * layoutScale + offset.y;
+              const px = mapXToScreenX(p.x);
+              const py = mapYToScreenY(p.y);
               minX = Math.min(minX, px);
               minY = Math.min(minY, py);
               maxX = Math.max(maxX, px);
@@ -330,10 +345,10 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       const p2 = points[i + 1];
 
       // 将原始坐标转换为屏幕坐标
-      const x1 = p1.x * layoutScale + offset.x;
-      const y1 = p1.y * layoutScale + offset.y;
-      const x2 = p2.x * layoutScale + offset.x;
-      const y2 = p2.y * layoutScale + offset.y;
+      const x1 = mapXToScreenX(p1.x);
+      const y1 = mapYToScreenY(p1.y);
+      const x2 = mapXToScreenX(p2.x);
+      const y2 = mapYToScreenY(p2.y);
 
       // 计算点(x,y)到线段(x1,y1)-(x2,y2)的距离
       const distance = pointToLineDistance(x, y, x1, y1, x2, y2);
