@@ -563,7 +563,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                       style="stroke"
                       strokeJoin="round"
                       strokeCap="round"
-                      strokeWidth={6}
+                      strokeWidth={4}
                     />
                     {/* 绘制通道线段 - 虚线前景 */}
                     <Path
