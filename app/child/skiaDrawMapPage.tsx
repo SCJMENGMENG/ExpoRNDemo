@@ -32,21 +32,36 @@ const skiaDrawMapPage = () => {
           setActiveTabIndex(index);
         }}
       />
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 }}>
+      <View style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-around',
+        marginTop: 5,
+        backgroundColor: '#95eaf3ff'
+      }}>
         {data.map((item, index) => (
           <TouchableOpacity
             style={{
-              width: 70, height: 30,
+              width: 70, height: 20,
               backgroundColor: activeTabIndex === index ? '#4CAF50' : '#FF9800',
-              borderRadius: 10,
+              borderRadius: 5,
               justifyContent: 'center',
               alignItems: 'center',
+              marginVertical: 2
             }}
             onPress={() => {
               setActiveTabIndex(index)
             }}
           >
-            <Text>{item.type === 0 ? (item.data as ZoneData).name : 'channel1'}</Text>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 10,
+                textAlign: 'center',
+                flexShrink: 1, // 允许文本收缩
+              }}
+              numberOfLines={1}
+            >{item.type === 0 ? (item.data as ZoneData).name : `channel${index}`}</Text>
           </TouchableOpacity>
         ))}
       </View>
