@@ -49,7 +49,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   const [internalActiveIndex, setInternalActiveIndex] = useState(activeTabIndex);
 
   // 缩放和平移状态
-  const scale = useSharedValue(1);
+  const scale = useSharedValue(10);// 初始放大10倍，避免开始未获取scale值时，边框会非常粗的问题
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const savedScale = useSharedValue(1);
@@ -142,8 +142,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
         const cy = (minY + maxY) / 2;
         const paddingRatio = 0.8; // 目标占视图 80%
         const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
-        // 只放大不缩小：保持至少当前缩放
-        const desired = Math.max(scale.value, fitScale);
+        // 对于区域，我们希望完全显示，因此不限制只能放大
+        const desired = fitScale;
         scheduleOnUI(focusToWorklet, cx, cy, desired);
       }
     }
@@ -294,8 +294,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
             const cy = (minY + maxY) / 2;
             const paddingRatio = 0.8; // 目标占视图 80%
             const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
-            // 只放大不缩小：保持至少当前缩放
-            const desired = Math.max(scale.value, fitScale);
+            // 对于区域，我们希望完全显示，因此不限制只能放大
+            const desired = fitScale;
             scheduleOnUI(focusToWorklet, cx, cy, desired);
           }
           return;
@@ -304,12 +304,9 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
         // 对于type为1的线段，使用原始数据点来检测点击
         const line = data?.[originalIndex]; // 使用原始索引
         if (line && line.data && line.data.points && line.data.points.length > 1) {
-
           const bounds = channelBoundsRef.current.get(originalIndex);
           if (!bounds) continue;
-
           const tolerance = 30 / scale.value;
-
           if (
             originalX < bounds.minX - tolerance ||
             originalX > bounds.maxX + tolerance ||
@@ -342,8 +339,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
             const cy = (minY + maxY) / 2;
             const paddingRatio = 0.8; // 目标占视图 80%
             const fitScale = Math.min((width * paddingRatio) / boxW, (viewH * paddingRatio) / boxH);
-            // 只放大不缩小：保持至少当前缩放
-            const desired = Math.max(scale.value, fitScale);
+            // 对于区域，我们希望完全显示，因此不限制只能放大
+            const desired = fitScale;
             scheduleOnUI(focusToWorklet, cx, cy, desired);
             return;
           }
@@ -481,6 +478,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       </View>
     );
   }
+
+  console.log('---scj---:', scale.value)
 
   return (
     <GestureDetector gesture={composedGestures}>
