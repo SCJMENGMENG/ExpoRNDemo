@@ -49,7 +49,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   const [internalActiveIndex, setInternalActiveIndex] = useState(activeTabIndex);
 
   // 缩放和平移状态
-  const scale = useSharedValue(10);// 初始放大10倍，避免开始未获取scale值时，边框会非常粗的问题
+  const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const savedScale = useSharedValue(1);
@@ -532,7 +532,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                           : '#5F7280'
                       )}
                       style="stroke"
-                      strokeWidth={shape.originalIndex === internalActiveIndex ? 3 / scale.value : 2 / scale.value}
+                      strokeWidth={1}
                     />
                   </>
                 ) : (
@@ -548,7 +548,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                       style="stroke"
                       strokeJoin="round"
                       strokeCap="round"
-                      strokeWidth={10 / scale.value}
+                      strokeWidth={6}
                     />
                     {/* 绘制通道线段 - 虚线前景 */}
                     <Path
@@ -557,7 +557,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                       style="stroke"
                       strokeJoin="round"
                       strokeCap="round"
-                      strokeWidth={2 / scale.value}
+                      strokeWidth={1}
                     >
                       <DashPathEffect intervals={[6, 3]} />
                     </Path>
@@ -604,7 +604,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                         ? '#4CDAA2'
                         : '#5F7280'
                     )} style="stroke"
-                    strokeWidth={3 / scale.value}
+                    strokeWidth={1}
                   />
                 </Group>
               );
