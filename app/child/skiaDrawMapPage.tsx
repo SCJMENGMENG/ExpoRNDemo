@@ -1,6 +1,7 @@
 import MultiplePolygonsMapCanvas, { PolygonData, ZoneData } from '@/components/skiaDrawMap/MultiplePolygonsCanvasMap';
 import React, { useEffect } from 'react';
 import {
+  FlatList,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -32,39 +33,38 @@ const skiaDrawMapPage = () => {
           setActiveTabIndex(index);
         }}
       />
-      <View style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-around',
-        marginTop: 5,
-        backgroundColor: '#95eaf3ff'
-      }}>
-        {data.map((item, index) => (
+      <FlatList
+        data={data}
+        renderItem={({ item, index }) => (
           <TouchableOpacity
             style={{
-              width: 70, height: 20,
+              width: 70,
+              height: 22,
               backgroundColor: activeTabIndex === index ? '#4CAF50' : '#FF9800',
               borderRadius: 5,
               justifyContent: 'center',
               alignItems: 'center',
-              marginVertical: 2
+              margin: 2,
             }}
             onPress={() => {
               setActiveTabIndex(index)
             }}
           >
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 10,
-                textAlign: 'center',
-                flexShrink: 1, // 允许文本收缩
-              }}
-              numberOfLines={1}
-            >{item.type === 0 ? (item.data as ZoneData).name : `channel${index}`}</Text>
+            <Text style={{ fontSize: 10 }} numberOfLines={1} ellipsizeMode="tail">
+              {item.type === 0 ? (item.data as ZoneData).name : `channel${index}`}
+            </Text>
           </TouchableOpacity>
-        ))}
-      </View>
+        )}
+        keyExtractor={(item, index) => index.toString()}
+        numColumns={Math.min(data.length, 5)} // 可以根据需要调整每行显示的数量
+        style={{ 
+          marginTop: 5, 
+          backgroundColor: '#b5ecf6ff', 
+          height: height * 0.83 - width 
+        }}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+      />
     </View>
   );
 };
