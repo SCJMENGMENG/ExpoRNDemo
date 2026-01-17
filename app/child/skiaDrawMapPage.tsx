@@ -19,7 +19,7 @@ const skiaDrawMapPage = () => {
     eventBus.emit('changePage', false); // 非首页，禁用边缘手势
   }, []);
 
-  const data: PolygonData[] = getSmallData();//getLargeData();
+  const data: PolygonData[] = getSmallData();// getLargeData  getSmallData
 
   return (
     <View style={{ backgroundColor: '#fbeef0ff' }}>

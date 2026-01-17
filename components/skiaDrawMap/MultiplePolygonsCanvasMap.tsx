@@ -30,6 +30,7 @@ export type PolygonData = {
 
 const minS = 1; // 最小缩放比例
 const maxS = 5; // 最大缩放比例
+const IMAGE_FIXED_SCALE = 0.5; // 图片固定缩放系数（<1 让图片略小于画布）
 
 interface MultiplePolygonsCanvasMapProps {
   width: number;
@@ -242,14 +243,38 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   }, [shapePaths]);
   const activeClipPath = clipPathRef.current.get(internalActiveIndex) ?? null;
 
-  // 图片的旋转变换
-  const imageTransform = useMemo(() => [
-    { translateX: width / 2 },
-    { translateY: viewH / 2 },
-    { rotate: -stripeAngleValue * (Math.PI / 180) },
-    { translateX: -width / 2 },
-    { translateY: -viewH / 2 },
-  ], [width, viewH, stripeAngleValue]);
+  // 计算当前激活图形的中心（屏幕坐标），用于作为图片旋转枢轴
+  const activePivot = useMemo(() => {
+    if (data && internalActiveIndex >= 0 && data[internalActiveIndex]?.data?.points?.length) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const p of data[internalActiveIndex]!.data!.points!) {
+        const px = mapXToScreenX(p.x);
+        const py = mapYToScreenY(p.y);
+        minX = Math.min(minX, px);
+        minY = Math.min(minY, py);
+        maxX = Math.max(maxX, px);
+        maxY = Math.max(maxY, py);
+      }
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+      return { x: cx, y: cy };
+    }
+    return { x: width / 2, y: viewH / 2 };
+  }, [data, internalActiveIndex, layoutScale, offset, width, viewH]);
+
+  // 图片的旋转变换（围绕激活图形中心旋转，并应用固定缩放系数）
+  const imageTransform = useMemo(() => {
+    const pivotX = activePivot.x;
+    const pivotY = activePivot.y;
+    return [
+      { translateX: pivotX },
+      { translateY: pivotY },
+      { rotate: -stripeAngleValue * (Math.PI / 180) },
+      { scale: IMAGE_FIXED_SCALE },
+      { translateX: -pivotX },
+      { translateY: -pivotY },
+    ];
+  }, [activePivot, stripeAngleValue]);
 
   // 使用ref存储排序后的路径数据
   const shapePathsRef = useRef(sortedShapePaths);
@@ -574,12 +599,25 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                   {activeClipPath && (
                     <Group clip={activeClipPath} invertClip={false}>
                       <Group transform={imageTransform}>
-                        <Image
-                          image={image}
-                          fit="cover"
-                          width={width}
-                          height={viewH}
-                        />
+                        {
+                          (() => {
+                            const diag = Math.sqrt(width * width + viewH * viewH);
+                            const imgW = diag;
+                            const imgH = diag;
+                            const imgX = activePivot.x - imgW / 2;
+                            const imgY = activePivot.y - imgH / 2;
+                            return (
+                              <Image
+                                image={image}
+                                fit="cover"
+                                width={imgW}
+                                height={imgH}
+                                x={imgX}
+                                y={imgY}
+                              />
+                            );
+                          })()
+                        }
                       </Group>
                     </Group>
                   )}
