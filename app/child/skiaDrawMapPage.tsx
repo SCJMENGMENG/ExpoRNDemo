@@ -13,6 +13,7 @@ const skiaDrawMapPage = () => {
   const { width, height } = useWindowDimensions();
 
   const [activeTabIndex, setActiveTabIndex] = React.useState(0);
+  const [stripeAngleValue, setStripeAngleValue] = React.useState(0);
 
   useEffect(() => {
     eventBus.emit('changePage', false); // 非首页，禁用边缘手势
@@ -22,17 +23,39 @@ const skiaDrawMapPage = () => {
 
   return (
     <View style={{ backgroundColor: '#fbeef0ff' }}>
-      <Text>skiaDrawMapPage</Text>
       <MultiplePolygonsMapCanvas
         width={width}
         viewH={width}
         data={data}
-        stripeAngleValue={60}
+        stripeAngleValue={stripeAngleValue}
         activeTabIndex={activeTabIndex}
         onItemPress={(index) => {
           setActiveTabIndex(index);
         }}
       />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+        <TouchableOpacity
+          style={{ padding: 5, borderRadius: 5, backgroundColor: '#cd57c3ff' }}
+          onPress={() => {
+            if (stripeAngleValue < 180) {
+              setStripeAngleValue(stripeAngleValue + 10);
+            }
+          }}
+        >
+          <Text>{`角度增10`}</Text>
+        </TouchableOpacity>
+        <Text>{`当前角度${stripeAngleValue}`}</Text>
+        <TouchableOpacity
+          style={{ padding: 5, borderRadius: 5, backgroundColor: '#cd57c3ff' }}
+          onPress={() => {
+            if (stripeAngleValue > 10) {
+              setStripeAngleValue(stripeAngleValue - 10);
+            }
+          }}
+        >
+          <Text>{`角度减10`}</Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={data}
         renderItem={({ item, index }) => (
@@ -57,10 +80,10 @@ const skiaDrawMapPage = () => {
         )}
         keyExtractor={(item, index) => index.toString()}
         numColumns={Math.min(data.length, 5)} // 可以根据需要调整每行显示的数量
-        style={{ 
-          marginTop: 5, 
-          backgroundColor: '#b5ecf6ff', 
-          height: height * 0.83 - width 
+        style={{
+          marginTop: 5,
+          backgroundColor: '#b5ecf6ff',
+          height: height * 0.83 - width
         }}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
