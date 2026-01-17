@@ -516,37 +516,12 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                     {/* 绘制区域填充 */}
                     <Path
                       path={shape.path}
-                      color={Skia.Color(
-                        shape.originalIndex === internalActiveIndex
-                          ? 'transparent'
-                          : '#E6E9F0'
-                      )}
+                      color={Skia.Color('#E6E9F0')}
                     />
-
-                    {/* 如果是激活区域，则在其上方绘制图片 */}
-                    {shape.originalIndex === internalActiveIndex && activeClipPath && (
-                      <Group clip={activeClipPath} invertClip={false}>
-                        <Group transform={imageTransform}>
-                          <Image
-                            image={image}
-                            fit="cover"
-                            width={width}
-                            height={viewH}
-                            x={-width / 10}
-                            y={-viewH / 10}
-                          />
-                        </Group>
-                      </Group>
-                    )}
-
                     {/* 绘制区域边框 */}
                     <Path
                       path={shape.path}
-                      color={Skia.Color(
-                        shape.originalIndex === internalActiveIndex
-                          ? '#4CDAA2'
-                          : '#5F7280'
-                      )}
+                      color={Skia.Color('#5F7280')}
                       style="stroke"
                       strokeWidth={1}
                     />
@@ -591,11 +566,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                   {/* 绘制区域填充 */}
                   <Path
                     path={shape.path}
-                    color={Skia.Color(
-                      shape.originalIndex === internalActiveIndex
-                        ? 'transparent'
-                        : '#E6E9F0'
-                    )}
+                    color={Skia.Color('transparent')}
                   />
 
                   {/* 绘制图片 */}
@@ -615,11 +586,8 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
                   {/* 绘制区域边框 */}
                   <Path
                     path={shape.path}
-                    color={Skia.Color(
-                      shape.originalIndex === internalActiveIndex
-                        ? '#4CDAA2'
-                        : '#5F7280'
-                    )} style="stroke"
+                    color={Skia.Color('#4CDAA2')}
+                    style="stroke"
                     strokeWidth={1}
                   />
                 </Group>
