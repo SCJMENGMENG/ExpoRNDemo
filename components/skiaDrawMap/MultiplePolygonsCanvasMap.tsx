@@ -512,6 +512,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
             return (
               <Group key={`shape-${shape.originalIndex}`}>
                 {shape.type === 0 ? (
+                  shape.originalIndex !== internalActiveIndex &&
                   <>
                     {/* 绘制区域填充 */}
                     <Path
