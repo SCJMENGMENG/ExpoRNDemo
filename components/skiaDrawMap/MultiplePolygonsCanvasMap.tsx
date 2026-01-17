@@ -28,6 +28,9 @@ export type PolygonData = {
   data: ZoneData | ChannelData
 };
 
+const minS = 1; // 最小缩放比例
+const maxS = 5; // 最大缩放比例
+
 interface MultiplePolygonsCanvasMapProps {
   width: number;
   viewH: number;
@@ -105,8 +108,6 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
   // 计算并聚焦到某个区域中心（在UI线程执行动画）
   const focusToWorklet = (cx: number, cy: number, targetScale: number) => {
     'worklet';
-    const minS = 0.5;
-    const maxS = 3;
     const s = Math.max(minS, Math.min(maxS, targetScale));
     scale.value = withSpring(s);
     // 注意：当前Group的变换顺序为 scale -> translate
@@ -420,7 +421,7 @@ const MultiplePolygonsMapCanvas: React.FC<MultiplePolygonsCanvasMapProps> = ({
       };
     })
     .onUpdate((event) => {
-      const newScale = Math.max(0.5, Math.min(3, savedScale.value * event.scale));
+      const newScale = Math.max(minS, Math.min(maxS, savedScale.value * event.scale));
       const ratio = newScale / savedScale.value;
 
       const focalX = event.focalX;
